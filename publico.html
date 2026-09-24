@@ -31,17 +31,20 @@
             flex-wrap: wrap;
             gap: 10px;
         }
-        .logo { display: flex; align-items: center; gap: 12px; }
+        .logo { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
         .logo h1 { font-size: 24px; font-weight: 900; color: #17a2b8; }
         .logo p { color: #6c757d; font-size: 12px; font-weight: 600; }
         .btn-carrito {
             background: #17a2b8;
-            padding: 12px 20px;
+            padding: 12px 11px;
             border-radius: 8px;
             color: white;
             font-weight: 700;
+            font-size: 13px;
             border: none;
             cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
         .container { max-width: 1400px; margin: 0 auto; padding: 20px 15px; }
         #btn-carrito-icono {
@@ -417,7 +420,7 @@
                         <p><span id="total-productos">0</span> productos • 🔥 Tiempo Real</p>
                     </div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
                     <button class="btn-carrito" onclick="abrirOrientacion()" style="background: linear-gradient(135deg, #17a2b8, #0a6668); color: white;">
                         🧭 Orientación
                     </button>
