@@ -1167,8 +1167,8 @@ function recomendarProductos(productos, rama, opciones = {}) {
         // 1. Más precisa primero (nivel 1 > nivel 2 > nivel 3)
         if (a.matchNivel !== b.matchNivel) return a.matchNivel - b.matchNivel;
         // 2. Más vendidos primero
-        const masVendidoA = a.producto.esMasVendido ? 1 : 0;
-        const masVendidoB = b.producto.esMasVendido ? 1 : 0;
+        const masVendidoA = (a.producto.esMasVendido || a.producto.masVendidoAuto) ? 1 : 0;
+        const masVendidoB = (b.producto.esMasVendido || b.producto.masVendidoAuto) ? 1 : 0;
         if (masVendidoA !== masVendidoB) return masVendidoB - masVendidoA;
         // 3. Calificación combinada
         const califA = puntajeCalificacion(resenasPorProducto[a.producto.id]);
@@ -1451,7 +1451,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
 
             if (destacadoActual === 'oferta') filtrados = filtrados.filter(p => p.esOferta);
             else if (destacadoActual === 'nuevo') filtrados = filtrados.filter(p => p.esNuevo);
-            else if (destacadoActual === 'vendido') filtrados = filtrados.filter(p => p.esMasVendido);
+            else if (destacadoActual === 'vendido') filtrados = filtrados.filter(p => p.esMasVendido || p.masVendidoAuto);
 
             if (textoBusqueda.trim() !== '') {
                 const q = textoBusqueda.trim().toLowerCase();
@@ -1494,10 +1494,10 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                             </p>
                         `}
                         <span class="ver-ficha-link" onclick="abrirFicha('${p.id}')">Ver ficha completa</span>
-                        ${(p.esOferta || p.esNuevo || p.esMasVendido) ? `<div class="tags">
+                        ${(p.esOferta || p.esNuevo || p.esMasVendido || p.masVendidoAuto) ? `<div class="tags">
                             ${p.esOferta ? '<span class="tag oferta">🏷️ OFERTA</span>' : ''}
                             ${p.esNuevo ? '<span class="tag nuevo">✨ NUEVO</span>' : ''}
-                            ${p.esMasVendido ? '<span class="tag vendido">🔥 MÁS VENDIDO</span>' : ''}
+                            ${(p.esMasVendido || p.masVendidoAuto) ? '<span class="tag vendido">🔥 MÁS VENDIDO</span>' : ''}
                         </div>` : ''}
                         ${p.sabores ? `<select class="sabor-select" id="sabor-${p.id}">
                             ${dividirSabores(p.sabores).map(s => `<option value="${s}">${s}</option>`).join('')}

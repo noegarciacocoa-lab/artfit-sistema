@@ -908,7 +908,7 @@
 
             if (destacadoActual === 'oferta') filtrados = filtrados.filter(p => p.esOferta);
             else if (destacadoActual === 'nuevo') filtrados = filtrados.filter(p => p.esNuevo);
-            else if (destacadoActual === 'vendido') filtrados = filtrados.filter(p => p.esMasVendido);
+            else if (destacadoActual === 'vendido') filtrados = filtrados.filter(p => p.esMasVendido || p.masVendidoAuto);
 
             if (textoBusqueda.trim() !== '') {
                 const q = textoBusqueda.trim().toLowerCase();
@@ -937,10 +937,10 @@
                         <p style="color: #6c757d; font-size: 14px; margin: 5px 0;">${p.categoria}</p>
                         ${(p.talla || p.color) ? `<p style="color: #6610f2; font-size: 13px; margin: 2px 0 5px; font-weight:600;">${[p.talla ? 'Talla: ' + p.talla : '', p.color ? 'Color: ' + p.color : ''].filter(Boolean).join(' · ')}</p>` : ''}
                         <span class="ver-ficha-link" onclick="abrirFicha('${p.id}')">Ver ficha completa</span>
-                        ${(p.esOferta || p.esNuevo || p.esMasVendido) ? `<div class="tags">
+                        ${(p.esOferta || p.esNuevo || p.esMasVendido || p.masVendidoAuto) ? `<div class="tags">
                             ${p.esOferta ? '<span class="tag oferta">🏷️ OFERTA</span>' : ''}
                             ${p.esNuevo ? '<span class="tag nuevo">✨ NUEVO</span>' : ''}
-                            ${p.esMasVendido ? '<span class="tag vendido">🔥 MÁS VENDIDO</span>' : ''}
+                            ${(p.esMasVendido || p.masVendidoAuto) ? '<span class="tag vendido">🔥 MÁS VENDIDO</span>' : ''}
                         </div>` : ''}
                         ${p.sabores ? `<select class="sabor-select" id="sabor-${p.id}">
                             ${dividirSabores(p.sabores).map(s => `<option value="${s}">${s}</option>`).join('')}

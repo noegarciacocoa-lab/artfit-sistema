@@ -25,6 +25,22 @@
             z-index: 1000;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
+        .barra-volver-catalogo {
+            position: fixed;
+            top: var(--altura-header, 90px);
+            left: 0;
+            right: 0;
+            z-index: 950;
+            display: none;
+            background: #12395e;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+        .barra-volver-catalogo.show { display: block; }
+        .barra-volver-catalogo-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 10px 15px;
+        }
         .header-content {
             max-width: 1400px;
             margin: 0 auto;
@@ -533,17 +549,13 @@
             <div class="productos" id="productos"></div>
 
             <div id="vista-pedidos" style="display:none;">
-                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px;">
-                    <h2 style="font-size: 20px; font-weight: 900; color: white;">📋 Pedidos pendientes de pago</h2>
-                    <button class="btn" style="background: white; color: #6c757d; border: 2px solid #6c757d;" onclick="mostrarVistaProductos()">← Volver al catálogo</button>
+                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px; padding-top: 62px;">
                 </div>
                 <div id="lista-pedidos"></div>
             </div>
 
             <div id="vista-cupones" style="display:none;">
-                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px;">
-                    <h2 style="font-size: 20px; font-weight: 900; color: white;">🎟️ Cupones de descuento</h2>
-                    <button class="btn" style="background: white; color: #6c757d; border: 2px solid #6c757d;" onclick="mostrarVistaProductos()">← Volver al catálogo</button>
+                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px; padding-top: 62px;">
                 </div>
 
                 <div class="card" style="background:white; border-radius:15px; padding:20px; margin-bottom:20px;">
@@ -581,9 +593,7 @@
             </div>
 
             <div id="vista-menciones" style="display:none;">
-                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px;">
-                    <h2 style="font-size: 20px; font-weight: 900; color: white;">📸 Menciones en Instagram</h2>
-                    <button class="btn" style="background: white; color: #6c757d; border: 2px solid #6c757d;" onclick="mostrarVistaProductos()">← Volver al catálogo</button>
+                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px; padding-top: 62px;">
                 </div>
                 <div class="pedido-card" style="border-left-color: #fd7e14; display:flex; align-items:center; gap: 12px; flex-wrap: wrap;">
                     <label style="font-size: 13px; font-weight: 700; color: #495057;">Días entre menciones que puede subir un cliente:</label>
@@ -595,9 +605,7 @@
             </div>
 
             <div id="vista-vip" style="display:none;">
-                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px;">
-                    <h2 style="font-size: 20px; font-weight: 900; color: white;">👑 ArtFit VIP Zone</h2>
-                    <button class="btn" style="background: white; color: #6c757d; border: 2px solid #6c757d;" onclick="mostrarVistaProductos()">← Volver al catálogo</button>
+                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px; padding-top: 62px;">
                 </div>
 
                 <div class="pedido-card" style="border-left-color: #ffc107; display:flex; align-items:center; gap: 12px; flex-wrap: wrap; margin-bottom:20px;">
@@ -658,9 +666,7 @@
             </div>
 
             <div id="vista-distribuidores" style="display:none;">
-                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px;">
-                    <h2 style="font-size: 20px; font-weight: 900; color: white;">🤝 Distribuidores</h2>
-                    <button class="btn" style="background: white; color: #6c757d; border: 2px solid #6c757d;" onclick="mostrarVistaProductos()">← Volver al catálogo</button>
+                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px; padding-top: 62px;">
                 </div>
 
                 <div class="card" style="background:white; border-radius:15px; padding:20px; margin-bottom:20px;">
@@ -680,13 +686,11 @@
             </div>
 
             <div id="vista-resenas" style="display:none;">
-                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px;">
-                    <h2 style="font-size: 20px; font-weight: 900; color: white;">⭐ Reseñas</h2>
+                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px; padding-top: 62px;">
                     <div style="display:flex; gap:8px;">
                         <button class="btn" style="background:#20c997; color:white;" onclick="poblarResenasSemilla()">🌱 Poblar reseñas de ejemplo</button>
                         <button class="btn" style="background:#6f42c1; color:white;" onclick="variarFormatoNombres()">🎲 Variar formato de nombres</button>
-                        <button class="btn" style="background: white; color: #6c757d; border: 2px solid #6c757d;" onclick="mostrarVistaProductos()">← Volver al catálogo</button>
-                    </div>
+                        </div>
                 </div>
 
                 <h3 style="color:white; font-size:15px; margin-bottom:10px;">⏳ Pendientes de aprobar</h3>
@@ -722,9 +726,7 @@
             </div>
 
             <div id="vista-envios" style="display:none;">
-                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px;">
-                    <h2 style="font-size: 20px; font-weight: 900; color: white;">🚚 Envíos</h2>
-                    <button class="btn" style="background: white; color: #6c757d; border: 2px solid #6c757d;" onclick="mostrarVistaProductos()">← Volver al catálogo</button>
+                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px; padding-top: 62px;">
                 </div>
 
                 <div class="card" style="background:white; border-radius:15px; padding:20px; margin-bottom:20px;">
@@ -775,17 +777,13 @@
             </div>
 
             <div id="vista-historial-envios" style="display:none;">
-                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px;">
-                    <h2 style="font-size: 20px; font-weight: 900; color: white;">📦 Historial de envíos</h2>
-                    <button class="btn" style="background: white; color: #6c757d; border: 2px solid #6c757d;" onclick="mostrarVistaProductos()">← Volver al catálogo</button>
+                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px; padding-top: 62px;">
                 </div>
                 <div id="lista-historial-envios"></div>
             </div>
 
             <div id="vista-historial-ventas" style="display:none;">
-                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px;">
-                    <h2 style="font-size: 20px; font-weight: 900; color: white;">💰 Historial de ventas</h2>
-                    <button class="btn" style="background: white; color: #6c757d; border: 2px solid #6c757d;" onclick="mostrarVistaProductos()">← Volver al catálogo</button>
+                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px; padding-top: 62px;">
                 </div>
                 <div class="card" style="background:white; border-radius:15px; padding:20px; margin-bottom:14px; display:flex; gap:30px; flex-wrap:wrap;">
                     <div>
@@ -821,9 +819,7 @@
             </div>
 
             <div id="vista-finanzas" style="display:none;">
-                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px;">
-                    <h2 style="font-size: 20px; font-weight: 900; color: white;">💸 Finanzas</h2>
-                    <button class="btn" style="background: white; color: #6c757d; border: 2px solid #6c757d;" onclick="mostrarVistaProductos()">← Volver al catálogo</button>
+                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px; padding-top: 62px;">
                 </div>
 
                 <div class="card" style="background:white; border-radius:15px; padding:16px; margin-bottom:14px;">
@@ -863,6 +859,11 @@
                         <div style="font-size:12px; color:#6c757d; font-weight:700;">MARGEN BRUTO (ventas)</div>
                         <div id="finanzas-margen-bruto" style="font-size:16px; font-weight:700; color:#17a2b8;">$0.00</div>
                     </div>
+                    <div>
+                        <div style="font-size:12px; color:#6c757d; font-weight:700;">🎁 DESCUENTOS OTORGADOS</div>
+                        <div id="finanzas-descuentos-otorgados" style="font-size:16px; font-weight:700; color:#e83e8c;">$0.00</div>
+                        <div style="font-size:10px; color:#adb5bd;">Informativo — ya está incluido en tus ingresos, no se resta de nuevo</div>
+                    </div>
                 </div>
 
                 <div class="card" style="background:white; border-radius:15px; padding:20px; margin-bottom:14px;">
@@ -880,6 +881,13 @@
                     </div>
                 </div>
 
+                <div class="card" style="background:white; border-radius:15px; padding:20px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <div>
+                        <h3 style="font-size:15px; margin:0 0 4px;">📊 Análisis de productos</h3>
+                        <div style="font-size:12px; color:#6c757d;">Top vendidos, agotados y qué conviene resurtir pronto</div>
+                    </div>
+                    <button class="btn" style="background:#6610f2; color:white; font-size:13px; padding:10px 18px;" onclick="abrirModalAnalisisProductos()">📊 Ver análisis</button>
+                </div>
                 <div class="card" style="background:white; border-radius:15px; padding:20px; margin-bottom:14px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
                         <h3 style="font-size:15px; margin:0;">🧾 Gastos registrados</h3>
@@ -894,9 +902,7 @@
             </div>
 
             <div id="vista-team-coaching" style="display:none;">
-                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px;">
-                    <h2 style="font-size: 20px; font-weight: 900; color: white;">🥊 Team Coaching</h2>
-                    <button class="btn" style="background: white; color: #6c757d; border: 2px solid #6c757d;" onclick="mostrarVistaProductos()">← Volver al catálogo</button>
+                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px; padding-top: 62px;">
                 </div>
 
                 <div class="card" style="background:white; border-radius:15px; padding:20px; margin-bottom:20px;">
@@ -925,9 +931,7 @@
             </div>
 
             <div id="vista-coaching" style="display:none;">
-                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px;">
-                    <h2 style="font-size: 20px; font-weight: 900; color: white;">💪 Coaching</h2>
-                    <button class="btn" style="background: white; color: #6c757d; border: 2px solid #6c757d;" onclick="mostrarVistaProductos()">← Volver al catálogo</button>
+                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px; padding-top: 62px;">
                 </div>
 
                 <div class="card" style="background:white; border-radius:15px; padding:20px; margin-bottom:20px;">
@@ -973,9 +977,7 @@
             </div>
 
             <div id="vista-sorteos" style="display:none;">
-                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px;">
-                    <h2 style="font-size: 20px; font-weight: 900; color: white;">🎟️ Sorteos Mensuales</h2>
-                    <button class="btn" style="background: white; color: #6c757d; border: 2px solid #6c757d;" onclick="mostrarVistaProductos()">← Volver al catálogo</button>
+                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px; padding-top: 62px;">
                 </div>
 
                 <div class="card" style="background:white; border-radius:15px; padding:20px; margin-bottom:20px;">
@@ -1021,9 +1023,7 @@
             </div>
 
             <div id="vista-clientes" style="display:none;">
-                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px;">
-                    <h2 style="font-size: 20px; font-weight: 900; color: white;">👥 Clientes</h2>
-                    <button class="btn" style="background: white; color: #6c757d; border: 2px solid #6c757d;" onclick="mostrarVistaProductos()">← Volver al catálogo</button>
+                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px; padding-top: 62px;">
                 </div>
 
                 <div class="card" style="background:white; border-radius:15px; padding:20px; margin-bottom:20px;">
@@ -1116,6 +1116,22 @@
     </div>
 
 
+    <div id="modal-analisis-productos" class="modal">
+        <div class="modal-content" onclick="event.stopPropagation()" style="max-width:560px; padding-top:0;">
+            <div style="position:sticky; top:0; z-index:5; background:white; padding:24px 0 14px; margin-bottom:0; display:flex; justify-content:space-between; align-items:center;">
+                <h2 style="margin:0; font-size:18px;">📊 Análisis de productos</h2>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <button class="btn" style="background:#e9ecef; color:#495057; font-size:12px; padding:7px 12px;" onclick="renderAnalisisProductos()">🔄 Actualizar</button>
+                    <button type="button" aria-label="Cerrar" onclick="cerrarModalAnalisisProductos()" style="width:32px; height:32px; border-radius:999px; border:none; background:#e9ecef; color:#495057; font-size:14px; cursor:pointer; flex-shrink:0;">✕</button>
+                </div>
+            </div>
+            <div id="finanzas-analisis-productos">
+                <p style="font-size:12px; color:#adb5bd;">Cargando análisis…</p>
+            </div>
+            <button class="btn" style="width:100%; background:white; color:#6c757d; border:2px solid #6c757d; margin-top:16px;" onclick="cerrarModalAnalisisProductos()">Cerrar</button>
+        </div>
+    </div>
+
     <div id="modal-cobro-tienda" class="modal">
         <div class="modal-content" onclick="event.stopPropagation()" style="max-width:1180px; width:94vw; padding:0; overflow:hidden; display:flex; flex-direction:column; max-height:88vh;">
             <div style="flex-shrink:0; padding:16px 18px; background:#1a365d; display:flex; align-items:center; gap:12px;">
@@ -1142,7 +1158,10 @@
 
     <div id="modal-form" class="modal">
         <div class="modal-content" onclick="event.stopPropagation()">
-            <h2 id="form-title">Nuevo Producto</h2>
+            <div style="position:sticky; top:0; z-index:5; background:white; margin:-30px -30px 14px; padding:24px 30px 14px; display:flex; justify-content:space-between; align-items:center;">
+                <h2 id="form-title" style="margin:0;">Nuevo Producto</h2>
+                <button type="button" aria-label="Cerrar" onclick="cerrarModal()" style="width:32px; height:32px; border-radius:999px; border:none; background:#e9ecef; color:#495057; font-size:14px; cursor:pointer; flex-shrink:0;">✕</button>
+            </div>
             <form id="producto-form" onsubmit="guardarProducto(event)">
                 <div class="form-group">
                     <label>Nombre *</label>
@@ -1233,7 +1252,8 @@
                     <label style="margin-bottom: 8px;">Etiquetas (aparece en su categoría normal + en la sección elegida)</label>
                     <label style="font-weight: 400; margin-bottom: 6px;"><input type="checkbox" id="esOferta"> 🏷️ Oferta</label>
                     <label style="font-weight: 400; margin-bottom: 6px;"><input type="checkbox" id="esNuevo"> ✨ Nuevo</label>
-                    <label style="font-weight: 400;"><input type="checkbox" id="esMasVendido"> 🔥 Más Vendido</label>
+                    <label style="font-weight: 400;"><input type="checkbox" id="esMasVendido"> 🔥 Más Vendido (forzar manualmente)</label>
+                    <div style="font-size:11px; color:#6c757d; margin-top:2px; margin-bottom:8px;">Los 3 productos con más ventas de cada categoría ya se marcan solos — usa esto solo para forzar la etiqueta en un producto específico.</div>
                 </div>
                 <div class="form-group" style="background: #e6f5f5; padding: 12px; border-radius: 8px; border: 1.5px solid #b8e0e0;">
                     <label style="margin-bottom: 8px; color: #0a6668;">Ficha de producto (todo opcional — el cliente lo ve al darle clic al producto)</label>
@@ -1318,6 +1338,63 @@
             }
         }
         let productos = [];
+        let masVendidosCalculados = false;
+
+        function esProductoMasVendido(p) {
+            return !!(p.esMasVendido || p.masVendidoAuto);
+        }
+
+        // Calcula, por categoría, los 3 productos con más unidades vendidas en todo
+        // el historial, y marca masVendidoAuto:true/false en Firebase para cada uno.
+        // No toca esMasVendido (el checkbox manual) — ambas banderas se combinan
+        // al mostrar la etiqueta (ver esProductoMasVendido).
+        async function recalcularMasVendidosAuto() {
+            try {
+                const snapshot = await db.ref('ventas').once('value');
+                const data = snapshot.val();
+                const ventas = data ? Object.values(data) : [];
+
+                const unidadesPorProducto = {};
+                ventas.forEach(v => {
+                    (v.items || []).forEach(it => {
+                        if (!it.productoId) return;
+                        unidadesPorProducto[it.productoId] = (unidadesPorProducto[it.productoId] || 0) + (Number(it.cantidad) || 0);
+                    });
+                });
+
+                const porCategoria = {};
+                productos.forEach(p => {
+                    const cat = p.categoria || 'Otro';
+                    if (!porCategoria[cat]) porCategoria[cat] = [];
+                    porCategoria[cat].push(p);
+                });
+
+                const idsTop3 = new Set();
+                Object.values(porCategoria).forEach(lista => {
+                    lista
+                        .map(p => ({ id: p.id, unidades: unidadesPorProducto[p.id] || 0 }))
+                        .filter(x => x.unidades > 0)
+                        .sort((a, b) => b.unidades - a.unidades)
+                        .slice(0, 3)
+                        .forEach(x => idsTop3.add(x.id));
+                });
+
+                const actualizaciones = {};
+                productos.forEach(p => {
+                    const esTop3 = idsTop3.has(p.id);
+                    if (!!p.masVendidoAuto !== esTop3) {
+                        actualizaciones[`productos/${p.id}/masVendidoAuto`] = esTop3;
+                    }
+                });
+                if (Object.keys(actualizaciones).length > 0) {
+                    await db.ref().update(actualizaciones);
+                }
+                return { productosConEtiqueta: idsTop3.size, totalVentasRevisadas: ventas.length };
+            } catch (e) {
+                console.error('Error recalculando más vendidos:', e);
+                return null;
+            }
+        }
 
         // ==================== ORIENTACIÓN: motor + árbol ====================
 // ============================================================
@@ -1517,8 +1594,8 @@ function recomendarProductos(productos, rama, opciones = {}) {
         // 1. Más precisa primero (nivel 1 > nivel 2 > nivel 3)
         if (a.matchNivel !== b.matchNivel) return a.matchNivel - b.matchNivel;
         // 2. Más vendidos primero
-        const masVendidoA = a.producto.esMasVendido ? 1 : 0;
-        const masVendidoB = b.producto.esMasVendido ? 1 : 0;
+        const masVendidoA = esProductoMasVendido(a.producto) ? 1 : 0;
+        const masVendidoB = esProductoMasVendido(b.producto) ? 1 : 0;
         if (masVendidoA !== masVendidoB) return masVendidoB - masVendidoA;
         // 3. Calificación combinada
         const califA = puntajeCalificacion(resenasPorProducto[a.producto.id]);
@@ -1779,7 +1856,23 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             document.getElementById('loading').style.display = 'none';
             document.getElementById('app').style.display = 'block';
             mostrarNotif('✅ Conectado a Firebase', 'success');
+            ajustarAlturaHeaderSticky();
+            if (!masVendidosCalculados) {
+                masVendidosCalculados = true;
+                recalcularMasVendidosAuto();
+            }
         });
+
+        // Mide la altura real del encabezado principal (que puede variar según
+        // cuántas filas ocupen sus botones en cada celular) y la guarda en una
+        // variable CSS, para que los encabezados de cada sección (Pedidos,
+        // Finanzas, etc.) se peguen justo debajo de él, sin taparlo, al hacer scroll.
+        function ajustarAlturaHeaderSticky() {
+            const header = document.querySelector('.header');
+            if (!header) return;
+            document.documentElement.style.setProperty('--altura-header', header.offsetHeight + 'px');
+        }
+        window.addEventListener('resize', ajustarAlturaHeaderSticky);
 
         function actualizarUI() {
             document.getElementById('total-productos').textContent = productos.length;
@@ -1793,6 +1886,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             const abierto = document.getElementById('herramientas-panel').style.display === 'block';
             document.getElementById('herramientas-panel').style.display = abierto ? 'none' : 'block';
             document.getElementById('herramientas-chevron').style.transform = abierto ? 'rotate(0deg)' : 'rotate(180deg)';
+            ajustarAlturaHeaderSticky();
         }
 
         function actualizarBadgeHerramientas() {
@@ -1833,7 +1927,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
 
             if (destacadoActual === 'oferta') filtrados = filtrados.filter(p => p.esOferta);
             else if (destacadoActual === 'nuevo') filtrados = filtrados.filter(p => p.esNuevo);
-            else if (destacadoActual === 'vendido') filtrados = filtrados.filter(p => p.esMasVendido);
+            else if (destacadoActual === 'vendido') filtrados = filtrados.filter(p => esProductoMasVendido(p));
 
             if (textoBusqueda.trim() !== '') {
                 const q = textoBusqueda.trim().toLowerCase();
@@ -1860,10 +1954,10 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                             ${!p.enStock ? '<span style="background: #dc3545; color: white; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">AGOTADO</span>' : ''}
                         </div>
                         <p style="color: #6c757d; font-size: 14px; margin: 5px 0;">${p.categoria}</p>
-                        ${(p.esOferta || p.esNuevo || p.esMasVendido) ? `<div class="tags">
+                        ${(p.esOferta || p.esNuevo || esProductoMasVendido(p)) ? `<div class="tags">
                             ${p.esOferta ? '<span class="tag oferta">🏷️ OFERTA</span>' : ''}
                             ${p.esNuevo ? '<span class="tag nuevo">✨ NUEVO</span>' : ''}
-                            ${p.esMasVendido ? '<span class="tag vendido">🔥 MÁS VENDIDO</span>' : ''}
+                            ${esProductoMasVendido(p) ? '<span class="tag vendido">🔥 MÁS VENDIDO</span>' : ''}
                         </div>` : ''}
                         ${p.sabores ? `<p style="color: #17a2b8; font-size: 13px; margin: 5px 0;">${p.sabores}</p>` : ''}
                         ${(p.talla || p.color) ? `<p style="color: #6610f2; font-size: 13px; margin: 5px 0; font-weight:600;">${[p.talla ? 'Talla: ' + p.talla : '', p.color ? 'Color: ' + p.color : ''].filter(Boolean).join(' · ')}</p>` : ''}
@@ -3791,8 +3885,32 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         });
 
         const VISTAS_ADMIN = ['vista-pedidos', 'vista-cupones', 'vista-menciones', 'vista-vip', 'vista-distribuidores', 'vista-resenas', 'vista-envios', 'vista-historial-envios', 'vista-historial-ventas', 'vista-finanzas', 'vista-team-coaching', 'vista-coaching', 'vista-sorteos', 'vista-clientes'];
+
+        const TITULOS_VISTAS = {
+            'vista-pedidos': '📋 Pedidos pendientes de pago',
+            'vista-cupones': '🎟️ Cupones de descuento',
+            'vista-menciones': '📸 Menciones en Instagram',
+            'vista-vip': '👑 ArtFit VIP Zone',
+            'vista-distribuidores': '🤝 Distribuidores',
+            'vista-resenas': '⭐ Reseñas',
+            'vista-envios': '🚚 Envíos',
+            'vista-historial-envios': '📦 Historial de envíos',
+            'vista-historial-ventas': '💰 Historial de ventas',
+            'vista-finanzas': '💸 Finanzas',
+            'vista-team-coaching': '🥊 Team Coaching',
+            'vista-coaching': '💪 Coaching',
+            'vista-sorteos': '🎟️ Sorteos Mensuales',
+            'vista-clientes': '👥 Clientes'
+        };
+
+        function mostrarBarraVolverCatalogo(idVista) {
+            ajustarAlturaHeaderSticky();
+            document.getElementById('barra-volver-catalogo-titulo').textContent = TITULOS_VISTAS[idVista] || '';
+            document.getElementById('barra-volver-catalogo').classList.add('show');
+        }
         function ocultarTodasLasVistas() {
             VISTAS_ADMIN.forEach(id => document.getElementById(id).style.display = 'none');
+            document.getElementById('barra-volver-catalogo').classList.add('show');
         }
 
         function mostrarVistaPedidos() {
@@ -3800,6 +3918,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             document.getElementById('productos').style.display = 'none';
             ocultarTodasLasVistas();
             document.getElementById('vista-pedidos').style.display = 'block';
+            mostrarBarraVolverCatalogo('vista-pedidos');
             renderPedidos();
         }
 
@@ -3808,6 +3927,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             document.getElementById('productos').style.display = 'none';
             ocultarTodasLasVistas();
             document.getElementById('vista-envios').style.display = 'block';
+            mostrarBarraVolverCatalogo('vista-envios');
             renderConfigEnvios();
         }
 
@@ -3816,6 +3936,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             document.getElementById('productos').style.display = 'none';
             ocultarTodasLasVistas();
             document.getElementById('vista-historial-envios').style.display = 'block';
+            mostrarBarraVolverCatalogo('vista-historial-envios');
             cargarHistorialEnvios();
         }
 
@@ -3885,6 +4006,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             document.getElementById('productos').style.display = 'none';
             ocultarTodasLasVistas();
             document.getElementById('vista-historial-ventas').style.display = 'block';
+            mostrarBarraVolverCatalogo('vista-historial-ventas');
             cargarHistorialVentas();
         }
 
@@ -3897,7 +4019,142 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             document.getElementById('productos').style.display = 'none';
             ocultarTodasLasVistas();
             document.getElementById('vista-finanzas').style.display = 'block';
+            mostrarBarraVolverCatalogo('vista-finanzas');
             cambiarPeriodoFinanzas('mes');
+        }
+
+        function abrirModalAnalisisProductos() {
+            document.getElementById('modal-analisis-productos').classList.add('show');
+            renderAnalisisProductos();
+        }
+
+        function cerrarModalAnalisisProductos() {
+            document.getElementById('modal-analisis-productos').classList.remove('show');
+        }
+
+        // Calcula unidades vendidas por producto en todo el historial, y por separado
+        // en los últimos N días (para estimar el ritmo de venta actual).
+        async function calcularUnidadesVendidas() {
+            const snapshot = await db.ref('ventas').once('value');
+            const data = snapshot.val();
+            const ventas = data ? Object.values(data) : [];
+
+            const totalPorProducto = {};
+            const recientePorProducto = {};
+            const primeraVentaPorProducto = {};
+            const haceUnMes = Date.now() - 30 * 24 * 60 * 60 * 1000;
+
+            ventas.forEach(v => {
+                const fechaMs = new Date(v.fecha).getTime();
+                (v.items || []).forEach(it => {
+                    if (!it.productoId) return;
+                    const cant = Number(it.cantidad) || 0;
+                    totalPorProducto[it.productoId] = (totalPorProducto[it.productoId] || 0) + cant;
+                    if (fechaMs >= haceUnMes) {
+                        recientePorProducto[it.productoId] = (recientePorProducto[it.productoId] || 0) + cant;
+                    }
+                    if (!primeraVentaPorProducto[it.productoId] || fechaMs < primeraVentaPorProducto[it.productoId]) {
+                        primeraVentaPorProducto[it.productoId] = fechaMs;
+                    }
+                });
+            });
+
+            return { totalPorProducto, recientePorProducto, primeraVentaPorProducto };
+        }
+
+        async function renderAnalisisProductos() {
+            const cont = document.getElementById('finanzas-analisis-productos');
+            cont.innerHTML = '<p style="font-size:12px; color:#adb5bd;">Cargando análisis…</p>';
+
+            const { totalPorProducto, recientePorProducto, primeraVentaPorProducto } = await calcularUnidadesVendidas();
+
+            // --- Top 3 más vendidos por categoría ---
+            const porCategoria = {};
+            productos.forEach(p => {
+                const cat = p.categoria || 'Otro';
+                if (!porCategoria[cat]) porCategoria[cat] = [];
+                porCategoria[cat].push(p);
+            });
+            let htmlTop = '';
+            Object.keys(porCategoria).sort().forEach(cat => {
+                const top3 = porCategoria[cat]
+                    .map(p => ({ p, unidades: totalPorProducto[p.id] || 0 }))
+                    .filter(x => x.unidades > 0)
+                    .sort((a, b) => b.unidades - a.unidades)
+                    .slice(0, 3);
+                if (top3.length === 0) return;
+                htmlTop += `<div style="margin-bottom:10px;">
+                    <div style="font-size:12px; font-weight:800; color:#6610f2; margin-bottom:4px;">${cat}</div>
+                    ${top3.map((x, i) => `<div style="display:flex; justify-content:space-between; font-size:13px; padding:4px 0; border-bottom:1px solid #f1f3f5;">
+                        <span>${i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'} ${x.p.nombre}</span>
+                        <span style="font-weight:700; color:#495057;">${x.unidades} vendidos</span>
+                    </div>`).join('')}
+                </div>`;
+            });
+            if (!htmlTop) htmlTop = '<p style="font-size:12.5px; color:#adb5bd;">Todavía no hay suficientes ventas registradas.</p>';
+
+            // --- Agotados ---
+            const agotados = productos.filter(p => !p.enStock);
+            let htmlAgotados = agotados.length === 0
+                ? '<p style="font-size:12.5px; color:#adb5bd;">No tienes productos agotados 🎉</p>'
+                : agotados.map(p => `<div style="display:flex; justify-content:space-between; font-size:13px; padding:4px 0; border-bottom:1px solid #f1f3f5;">
+                    <span>${p.nombre}</span>
+                    <span style="font-weight:700; color:#dc3545;">Agotado</span>
+                </div>`).join('');
+
+            // --- Por resurtir pronto (ritmo actual de venta) ---
+            const candidatosResurtir = productos
+                .filter(p => p.cantidadStock !== null && p.cantidadStock !== undefined && p.cantidadStock > 0)
+                .map(p => {
+                    const recientes = recientePorProducto[p.id] || 0;
+                    let ritmoDiario = recientes / 30;
+                    let fuente = 'últimos 30 días';
+                    if (ritmoDiario === 0 && totalPorProducto[p.id] > 0 && primeraVentaPorProducto[p.id]) {
+                        const diasDesdePrimeraVenta = Math.max(1, (Date.now() - primeraVentaPorProducto[p.id]) / (24 * 60 * 60 * 1000));
+                        ritmoDiario = totalPorProducto[p.id] / diasDesdePrimeraVenta;
+                        fuente = 'todo el historial';
+                    }
+                    const diasRestantes = ritmoDiario > 0 ? Math.floor(p.cantidadStock / ritmoDiario) : null;
+                    return { p, diasRestantes, fuente };
+                })
+                .filter(x => x.diasRestantes !== null && x.diasRestantes <= 21)
+                .sort((a, b) => a.diasRestantes - b.diasRestantes);
+
+            let htmlResurtir = candidatosResurtir.length === 0
+                ? '<p style="font-size:12.5px; color:#adb5bd;">Nada urgente por resurtir en este momento.</p>'
+                : candidatosResurtir.map(x => `<div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; padding:5px 0; border-bottom:1px solid #f1f3f5;">
+                    <span>${x.diasRestantes <= 7 ? '🔴' : '🟡'} ${x.p.nombre} <span style="color:#adb5bd; font-size:11px;">(quedan ${x.p.cantidadStock})</span></span>
+                    <span style="font-weight:700; color:${x.diasRestantes <= 7 ? '#dc3545' : '#a37700'};">≈${x.diasRestantes} días</span>
+                </div>`).join('');
+
+            cont.innerHTML = `
+                ${seccionDesplegable('analisis-top', '🔥 Top 3 más vendidos por categoría', 'todo el historial', htmlTop)}
+                ${seccionDesplegable('analisis-agotados', '📦 Productos agotados', agotados.length + ' producto' + (agotados.length === 1 ? '' : 's'), htmlAgotados)}
+                ${seccionDesplegable('analisis-resurtir', '⏳ Por resurtir pronto', candidatosResurtir.length + ' producto' + (candidatosResurtir.length === 1 ? '' : 's') + ' en 21 días o menos', htmlResurtir)}
+            `;
+        }
+
+        function seccionDesplegable(id, titulo, subtitulo, contenidoHtml) {
+            return `
+                <div style="border:1.5px solid #f1f3f5; border-radius:10px; margin-bottom:10px; overflow:hidden;">
+                    <div onclick="toggleSeccionAnalisis('${id}')" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; padding:12px 14px; background:#f8f9fa;">
+                        <div>
+                            <div style="font-size:13px; font-weight:800; color:#1a365d;">${titulo}</div>
+                            <div style="font-size:11px; color:#adb5bd;">${subtitulo}</div>
+                        </div>
+                        <span id="${id}-chevron" style="font-size:14px; color:#6c757d; transition:transform 0.2s;">▼</span>
+                    </div>
+                    <div id="${id}-contenido" style="display:none; padding:12px 14px;">${contenidoHtml}</div>
+                </div>
+            `;
+        }
+
+        function toggleSeccionAnalisis(id) {
+            const contenido = document.getElementById(id + '-contenido');
+            const chevron = document.getElementById(id + '-chevron');
+            const abierto = contenido.style.display === 'block';
+            contenido.style.display = abierto ? 'none' : 'block';
+            chevron.style.transform = abierto ? 'rotate(0deg)' : 'rotate(180deg)';
         }
 
         function cambiarPeriodoFinanzas(periodo) {
@@ -3974,6 +4231,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 const margenBruto = ventas.reduce((s, v) => s + (v.ganancia || 0), 0);
                 const totalGastos = gastos.reduce((s, g) => s + (g.monto || 0), 0);
                 const gananciaNeta = margenBruto - totalGastos;
+                const descuentosOtorgados = ventas.reduce((s, v) => s + (v.descuentoAplicado > 0 ? v.descuentoAplicado : 0), 0);
 
                 const porCategoria = {};
                 gastos.forEach(g => {
@@ -3981,7 +4239,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                     porCategoria[cat] = (porCategoria[cat] || 0) + (g.monto || 0);
                 });
 
-                return { desde, hasta, ventas, gastos, ingresos, margenBruto, totalGastos, gananciaNeta, porCategoria };
+                return { desde, hasta, ventas, gastos, ingresos, margenBruto, totalGastos, gananciaNeta, descuentosOtorgados, porCategoria };
             });
         }
 
@@ -3997,12 +4255,13 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         }
 
         function renderVistaFinanzas() {
-            obtenerDatosFinanzasFiltrados().then(({ gastos, ingresos, margenBruto, totalGastos, gananciaNeta, porCategoria }) => {
+            obtenerDatosFinanzasFiltrados().then(({ gastos, ingresos, margenBruto, totalGastos, gananciaNeta, descuentosOtorgados, porCategoria }) => {
                 gastosCache = gastos;
 
                 document.getElementById('finanzas-ingresos').textContent = '$' + ingresos.toFixed(2);
                 document.getElementById('finanzas-gastos').textContent = '$' + totalGastos.toFixed(2);
                 document.getElementById('finanzas-margen-bruto').textContent = '$' + margenBruto.toFixed(2);
+                document.getElementById('finanzas-descuentos-otorgados').textContent = '$' + descuentosOtorgados.toFixed(2);
                 const ganNetaEl = document.getElementById('finanzas-ganancia-neta');
                 ganNetaEl.textContent = '$' + gananciaNeta.toFixed(2);
                 ganNetaEl.style.color = gananciaNeta >= 0 ? '#6610f2' : '#dc3545';
@@ -4317,6 +4576,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             document.getElementById('productos').style.display = 'none';
             ocultarTodasLasVistas();
             document.getElementById('vista-team-coaching').style.display = 'block';
+            mostrarBarraVolverCatalogo('vista-team-coaching');
             db.ref('configuracion/codigoTeamCoaching').once('value').then(snapshot => {
                 document.getElementById('team-coaching-codigo-input').value = snapshot.val() || '';
             });
@@ -4330,6 +4590,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             document.getElementById('productos').style.display = 'none';
             ocultarTodasLasVistas();
             document.getElementById('vista-coaching').style.display = 'block';
+            mostrarBarraVolverCatalogo('vista-coaching');
             limpiarFormularioReto();
             cargarRetos();
             cargarTransformaciones();
@@ -4568,6 +4829,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             document.getElementById('productos').style.display = 'none';
             ocultarTodasLasVistas();
             document.getElementById('vista-clientes').style.display = 'block';
+            mostrarBarraVolverCatalogo('vista-clientes');
             document.getElementById('clientes-buscador').value = '';
             cargarClientesLista();
         }
@@ -4627,6 +4889,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             document.getElementById('productos').style.display = 'none';
             ocultarTodasLasVistas();
             document.getElementById('vista-sorteos').style.display = 'block';
+            mostrarBarraVolverCatalogo('vista-sorteos');
             document.getElementById('sorteo-resultado-busqueda').innerHTML = '';
             document.getElementById('sorteo-buscar-numero').value = '';
             cargarConfigSorteo();
@@ -5107,6 +5370,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             document.getElementById('productos').style.display = 'none';
             ocultarTodasLasVistas();
             document.getElementById('vista-cupones').style.display = 'block';
+            mostrarBarraVolverCatalogo('vista-cupones');
             renderCupones();
         }
 
@@ -5115,6 +5379,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             document.getElementById('productos').style.display = 'none';
             ocultarTodasLasVistas();
             document.getElementById('vista-menciones').style.display = 'block';
+            mostrarBarraVolverCatalogo('vista-menciones');
             renderMenciones();
         }
 
@@ -5123,6 +5388,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             document.getElementById('productos').style.display = 'none';
             ocultarTodasLasVistas();
             document.getElementById('vista-vip').style.display = 'block';
+            mostrarBarraVolverCatalogo('vista-vip');
             renderPaquetes();
         }
 
@@ -5131,6 +5397,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             document.getElementById('productos').style.display = 'none';
             ocultarTodasLasVistas();
             document.getElementById('vista-distribuidores').style.display = 'block';
+            mostrarBarraVolverCatalogo('vista-distribuidores');
             renderDistribuidores();
         }
 
@@ -5139,6 +5406,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             document.getElementById('productos').style.display = 'none';
             ocultarTodasLasVistas();
             document.getElementById('vista-resenas').style.display = 'block';
+            mostrarBarraVolverCatalogo('vista-resenas');
             renderResenas();
         }
 
@@ -5146,6 +5414,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             document.getElementById('filtros-wrap').style.display = '';
             document.getElementById('productos').style.display = '';
             ocultarTodasLasVistas();
+            document.getElementById('barra-volver-catalogo').classList.remove('show');
         }
 
         function renderPedidos() {
@@ -5453,6 +5722,9 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 origen: pedido.origen === 'mayoreo' ? 'mayoreo' : 'publico',
                 items: pedido.items,
                 total: pedido.total,
+                descuentoAplicado: (pedido.totalOriginal && pedido.total !== undefined)
+                    ? Math.max(0, pedido.totalOriginal - (pedido.total - (pedido.costoEnvio || 0)))
+                    : null,
                 ganancia: calcularGananciaPedido(pedido),
                 fecha: fechaPagoISO
             });
@@ -6234,6 +6506,16 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 distribuidorSolicitudPago: false,
                 distribuidorFallosConsecutivos: 0
             }).then(() => {
+                if (ganancia > 0) {
+                    db.ref('gastos').push({
+                        concepto: `Comisión distribuidor — ${cliente.nombre}`,
+                        categoria: 'Comisión Distribuidor',
+                        monto: ganancia,
+                        fecha: new Date().toISOString().slice(0, 10),
+                        notas: `Pago de ciclo de 8 semanas confirmado.`,
+                        fechaRegistro: new Date().toISOString()
+                    });
+                }
                 mostrarNotif('✅ Pago confirmado, ciclo reiniciado', 'success');
                 const mensaje = `Hola ${cliente.nombre}, confirmamos el pago de $${ganancia.toFixed(2)} de tus ganancias como Distribuidor ArtFit ✅ Tu nuevo ciclo de 8 semanas arranca hoy.`;
                 const url = `https://wa.me/52${telefono}?text=${encodeURIComponent(mensaje)}`;
@@ -6274,6 +6556,16 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 distribuidorRedenciones: 0,
                 distribuidorFallosConsecutivos: 0
             }).then(() => {
+                if (ganancia > 0) {
+                    db.ref('gastos').push({
+                        concepto: `Comisión distribuidor (cierre) — ${cliente.nombre}`,
+                        categoria: 'Comisión Distribuidor',
+                        monto: ganancia,
+                        fecha: new Date().toISOString().slice(0, 10),
+                        notas: `Pago final al retirar el beneficio de distribuidor.`,
+                        fechaRegistro: new Date().toISOString()
+                    });
+                }
                 mostrarNotif('🚫 Beneficio de distribuidor retirado', 'success');
                 const mensaje = `Hola ${cliente.nombre}, queremos agradecerte tu esfuerzo como Distribuidor ArtFit 🙌 Por ahora, el volumen de ventas de tus referidos no alcanzó a completar dos ciclos seguidos, así que vamos a pausar tu rol de Distribuidor. Esto no afecta en nada tu cuenta VIP — sigues siendo cliente VIP de ArtFit y conservas acceso a ArtFit VIP Zone exactamente igual que antes. Además, te vamos a pagar los $${ganancia.toFixed(2)} que ya generaste en este último ciclo, aunque no se haya llegado a los $10,000 — nos parece justo reconocer las ventas reales que hiciste. Si más adelante quieres volver a intentarlo, con gusto lo evaluamos de nuevo 💪`;
                 const url = `https://wa.me/52${telefono}?text=${encodeURIComponent(mensaje)}`;
@@ -6767,6 +7059,12 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
     </script>
     <div id="hint-scroll-down">Desliza hacia abajo <span style="font-size:16px;">⌄</span></div>
     <button class="btn-flotante-buscar" onclick="irAFiltros()" title="Ir arriba a buscar y filtrar">🔍 Ir arriba</button>
+    <div id="barra-volver-catalogo" class="barra-volver-catalogo">
+        <div class="barra-volver-catalogo-inner" style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+            <h2 id="barra-volver-catalogo-titulo" style="font-size: 18px; font-weight: 900; color: white; margin:0;"></h2>
+            <button class="btn" style="background: white; color: #6c757d; border: 2px solid #6c757d; flex-shrink:0;" onclick="mostrarVistaProductos()">← Volver al catálogo</button>
+        </div>
+    </div>
     <div id="modal-comprobante-grande" onclick="cerrarComprobanteGrande()" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); z-index:9000; align-items:center; justify-content:center; padding:20px;">
         <img id="modal-comprobante-grande-img" src="" style="max-width:90%; max-height:90%; border-radius:10px; box-shadow:0 10px 40px rgba(0,0,0,0.5);" onclick="event.stopPropagation()">
         <button type="button" onclick="cerrarComprobanteGrande()" style="position:absolute; top:20px; right:20px; background:white; border:none; border-radius:50%; width:40px; height:40px; font-size:20px; cursor:pointer;">✕</button>
