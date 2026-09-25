@@ -1382,14 +1382,30 @@
                         <input type="number" id="precioPublico" step="0.01" placeholder="0.00">
                     </div>
                 </div>
-                <div class="form-group">
-                    <label style="font-size: 12px; font-weight: 600;">Cantidad en inventario</label>
-                    <input type="number" id="cantidadStock" min="0" step="1" placeholder="Ej: 12" style="width:100%; padding:8px 10px; border-radius:8px; border:1.5px solid #e9ecef; font-size:13px;" oninput="sincronizarEnStockConCantidad()">
-                    <div style="font-size:11px; color:#6c757d; margin-top:4px;">Se descuenta solo con cada venta en tienda. Déjalo vacío si no quieres llevar el conteo exacto.</div>
-                </div>
-                <div class="form-group">
-                    <label style="font-size: 12px; font-weight: 600;">Código de barras (opcional)</label>
-                    <input type="text" id="codigoBarras" placeholder="Escanea aquí con la pistola, o escribe a mano" style="width:100%; padding:8px 10px; border-radius:8px; border:1.5px solid #e9ecef; font-size:13px;">
+                <div class="form-group" style="background:#f8f9fa; padding:12px; border-radius:8px;">
+                    <label style="font-size:12px; font-weight:600; margin-bottom:8px; display:block;">Control de stock</label>
+                    <div style="display:flex; gap:8px; margin-bottom:12px;">
+                        <button type="button" id="btn-control-manual" class="btn" style="flex:1; font-size:12px; padding:8px; background:#17a2b8; color:white;" onclick="cambiarControlStock('manual')">🔢 Manual</button>
+                        <button type="button" id="btn-control-individual" class="btn" style="flex:1; font-size:12px; padding:8px; background:#e9ecef; color:#495057;" onclick="cambiarControlStock('individual')">📋 Por código individual</button>
+                    </div>
+
+                    <div id="stock-modo-manual">
+                        <label style="font-size:12px; font-weight:600;">Cantidad en inventario</label>
+                        <input type="number" id="cantidadStock" min="0" step="1" placeholder="Ej: 12" style="width:100%; padding:8px 10px; border-radius:8px; border:1.5px solid #e9ecef; font-size:13px; box-sizing:border-box;" oninput="sincronizarEnStockConCantidad()">
+                        <div style="font-size:11px; color:#6c757d; margin:4px 0 10px;">Se descuenta solo con cada venta en tienda. Déjalo vacío si no quieres llevar el conteo exacto.</div>
+                        <label style="font-size:12px; font-weight:600;">Código de barras (opcional, uno solo para todas las piezas)</label>
+                        <input type="text" id="codigoBarras" placeholder="Escanea aquí con la pistola, o escribe a mano" style="width:100%; padding:8px 10px; border-radius:8px; border:1.5px solid #e9ecef; font-size:13px; box-sizing:border-box;">
+                    </div>
+
+                    <div id="stock-modo-individual" style="display:none;">
+                        <div style="font-size:12px; color:#495057; margin-bottom:8px;">Cada pieza trae su propio código de fábrica — escanéalas una por una. La cantidad en stock se cuenta sola.</div>
+                        <div style="display:flex; gap:6px; margin-bottom:8px;">
+                            <input type="text" id="codigo-individual-nuevo" placeholder="Escanea o escribe un código y da Enter" style="flex:1; padding:8px 10px; border-radius:8px; border:1.5px solid #e9ecef; font-size:13px; box-sizing:border-box;" onkeydown="if(event.key==='Enter'){event.preventDefault(); agregarCodigoIndividual();}">
+                            <button type="button" class="btn" style="background:#28a745; color:white; padding:8px 14px;" onclick="agregarCodigoIndividual()">➕</button>
+                        </div>
+                        <div id="lista-codigos-individuales" style="max-height:160px; overflow-y:auto; border:1.5px solid #e9ecef; border-radius:8px; padding:6px; background:white;"></div>
+                        <div style="font-size:12px; font-weight:700; margin-top:6px;">Total en stock: <span id="codigos-individuales-total">0</span></div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>
@@ -2215,6 +2231,8 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             document.getElementById('error-ficha-tabla').style.display = 'none';
             document.getElementById('ficha-tabla').style.borderColor = '#e9ecef';
             productoEditando = null;
+            codigosIndividualesTemp = [];
+            cambiarControlStock('manual');
         }
 
         function cargarImagen(e) {
@@ -2291,6 +2309,59 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             }
         }
 
+        // ===== Control de stock: manual vs. por código individual =====
+        let controlStockActual = 'manual';
+        let codigosIndividualesTemp = [];
+
+        function cambiarControlStock(modo) {
+            controlStockActual = modo;
+            document.getElementById('stock-modo-manual').style.display = modo === 'manual' ? 'block' : 'none';
+            document.getElementById('stock-modo-individual').style.display = modo === 'individual' ? 'block' : 'none';
+            document.getElementById('btn-control-manual').style.background = modo === 'manual' ? '#17a2b8' : '#e9ecef';
+            document.getElementById('btn-control-manual').style.color = modo === 'manual' ? 'white' : '#495057';
+            document.getElementById('btn-control-individual').style.background = modo === 'individual' ? '#17a2b8' : '#e9ecef';
+            document.getElementById('btn-control-individual').style.color = modo === 'individual' ? 'white' : '#495057';
+        }
+
+        function agregarCodigoIndividual() {
+            const input = document.getElementById('codigo-individual-nuevo');
+            const codigo = input.value.trim();
+            if (!codigo) return;
+            if (codigosIndividualesTemp.includes(codigo)) {
+                mostrarNotif('⚠️ Ese código ya está en la lista', 'error');
+                input.value = '';
+                return;
+            }
+            const otroProducto = productos.find(p => p.id !== productoEditando && p.controlStock === 'individual' && (p.codigosBarras || []).includes(codigo));
+            if (otroProducto) {
+                mostrarNotif(`⚠️ Ese código ya pertenece a "${otroProducto.nombre}"`, 'error');
+                input.value = '';
+                return;
+            }
+            codigosIndividualesTemp.push(codigo);
+            input.value = '';
+            input.focus();
+            renderListaCodigosIndividuales();
+        }
+
+        function quitarCodigoIndividual(index) {
+            codigosIndividualesTemp.splice(index, 1);
+            renderListaCodigosIndividuales();
+        }
+
+        function renderListaCodigosIndividuales() {
+            const cont = document.getElementById('lista-codigos-individuales');
+            cont.innerHTML = codigosIndividualesTemp.length === 0
+                ? '<p style="font-size:12px; color:#adb5bd; margin:4px;">Todavía no has escaneado ningún código.</p>'
+                : codigosIndividualesTemp.map((c, i) => `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 6px; font-size:12.5px; font-family:monospace; border-bottom:1px solid #f1f3f5;">
+                        <span>${c}</span>
+                        <button type="button" onclick="quitarCodigoIndividual(${i})" style="background:none; border:none; color:#dc3545; cursor:pointer; font-size:14px; padding:0 4px;">✕</button>
+                    </div>
+                `).join('');
+            document.getElementById('codigos-individuales-total').textContent = codigosIndividualesTemp.length;
+        }
+
         async function guardarProducto(e) {
             e.preventDefault();
 
@@ -2331,8 +2402,12 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 precioMayoreo: parseFloat(document.getElementById('precioMayoreo').value) || 0,
                 precioPublico: parseFloat(document.getElementById('precioPublico').value) || 0,
                 enStock: document.getElementById('enStock').checked,
-                cantidadStock: document.getElementById('cantidadStock').value === '' ? null : parseInt(document.getElementById('cantidadStock').value, 10),
-                codigoBarras: document.getElementById('codigoBarras').value.trim(),
+                controlStock: controlStockActual,
+                cantidadStock: controlStockActual === 'individual'
+                    ? codigosIndividualesTemp.length
+                    : (document.getElementById('cantidadStock').value === '' ? null : parseInt(document.getElementById('cantidadStock').value, 10)),
+                codigoBarras: controlStockActual === 'individual' ? null : document.getElementById('codigoBarras').value.trim(),
+                codigosBarras: controlStockActual === 'individual' ? codigosIndividualesTemp.slice() : null,
                 esOferta: document.getElementById('esOferta').checked,
                 esNuevo: document.getElementById('esNuevo').checked,
                 esMasVendido: document.getElementById('esMasVendido').checked,
@@ -2342,6 +2417,9 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 tablaNutricionalFoto: tablaFotoBase64,
                 modoUso: document.getElementById('ficha-modouso').value
             };
+            if (controlStockActual === 'individual') {
+                producto.enStock = codigosIndividualesTemp.length > 0;
+            }
 
             try {
                 await db.ref(`productos/${producto.id}`).set(producto);
@@ -2369,8 +2447,18 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             document.getElementById('precioMayoreo').value = p.precioMayoreo;
             document.getElementById('precioPublico').value = p.precioPublico;
             document.getElementById('enStock').checked = p.enStock;
-            document.getElementById('cantidadStock').value = (p.cantidadStock === null || p.cantidadStock === undefined) ? '' : p.cantidadStock;
-            document.getElementById('codigoBarras').value = p.codigoBarras || '';
+            if (p.controlStock === 'individual') {
+                cambiarControlStock('individual');
+                codigosIndividualesTemp = (p.codigosBarras || []).slice();
+                renderListaCodigosIndividuales();
+                document.getElementById('cantidadStock').value = '';
+                document.getElementById('codigoBarras').value = '';
+            } else {
+                cambiarControlStock('manual');
+                codigosIndividualesTemp = [];
+                document.getElementById('cantidadStock').value = (p.cantidadStock === null || p.cantidadStock === undefined) ? '' : p.cantidadStock;
+                document.getElementById('codigoBarras').value = p.codigoBarras || '';
+            }
             document.getElementById('esOferta').checked = !!p.esOferta;
             document.getElementById('esNuevo').checked = !!p.esNuevo;
             document.getElementById('esMasVendido').checked = !!p.esMasVendido;
@@ -3102,7 +3190,10 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             const codigo = campo.value.trim();
             campo.value = '';
             if (!codigo) return;
-            const producto = productos.find(p => p.codigoBarras && p.codigoBarras === codigo);
+            const producto = productos.find(p =>
+                (p.codigoBarras && p.codigoBarras === codigo) ||
+                (p.controlStock === 'individual' && (p.codigosBarras || []).includes(codigo))
+            );
             if (!producto) {
                 mostrarNotif('⚠️ Código no encontrado — búscalo a mano abajo', 'error');
                 renderCobroTienda();
@@ -3735,7 +3826,15 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 // Descontar inventario de cada producto vendido
                 for (const item of carritoTienda) {
                     const producto = productos.find(p => p.id === item.id);
-                    if (producto && producto.cantidadStock !== null && producto.cantidadStock !== undefined) {
+                    if (!producto) continue;
+                    if (producto.controlStock === 'individual') {
+                        const codigosRestantes = (producto.codigosBarras || []).slice(item.cantidad);
+                        await db.ref(`productos/${item.id}`).update({
+                            codigosBarras: codigosRestantes,
+                            cantidadStock: codigosRestantes.length,
+                            enStock: codigosRestantes.length > 0
+                        });
+                    } else if (producto.cantidadStock !== null && producto.cantidadStock !== undefined) {
                         const nuevaCantidad = Math.max(0, producto.cantidadStock - item.cantidad);
                         await db.ref(`productos/${item.id}`).update({
                             cantidadStock: nuevaCantidad,
@@ -3855,7 +3954,29 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                     <title>Ticket</title>
                     <style>
                         @page { size: 58mm auto; margin: 0; }
-                        body { width: 58mm; margin: 0; padding: 6px; font-family: 'Courier New', monospace; font-size: 11px; }
+                        body {
+                            width: 58mm;
+                            margin: 0;
+                            padding: 6px;
+                            font-family: 'Courier New', monospace;
+                            font-size: 11px;
+                            font-weight: 700;
+                            background: #ffffff !important;
+                            -webkit-print-color-adjust: exact;
+                            print-color-adjust: exact;
+                        }
+                        /* Fuerza negro puro en todo el texto y quita fondos/bordes grises,
+                           para que la impresora térmica no intente "tramar" grises con
+                           puntos salteados (lo que se ve como borroso o pixeleado). */
+                        * {
+                            color: #000000 !important;
+                            background-color: transparent !important;
+                            border-color: #000000 !important;
+                        }
+                        img {
+                            filter: grayscale(1) contrast(180%);
+                            image-rendering: -webkit-optimize-contrast;
+                        }
                     </style>
                 </head>
                 <body onload="window.print(); window.close();">${contenido}</body>
@@ -5055,7 +5176,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         }
 
         function renderResumenCodigosBarras() {
-            const faltantes = productos.filter(p => !p.codigoBarras).length;
+            const faltantes = productos.filter(p => p.controlStock !== 'individual' && !p.codigoBarras).length;
             document.getElementById('codigos-barras-resumen-faltantes').textContent =
                 faltantes === 0 ? '✅ Todos tus productos ya tienen código de barras.' : `⚠️ ${faltantes} producto${faltantes === 1 ? '' : 's'} sin código de barras.`;
         }
@@ -5081,7 +5202,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         }
 
         async function asignarCodigosFaltantes() {
-            const faltantes = productos.filter(p => !p.codigoBarras);
+            const faltantes = productos.filter(p => p.controlStock !== 'individual' && !p.codigoBarras);
             if (faltantes.length === 0) {
                 mostrarNotif('✅ Todos tus productos ya tienen código de barras', 'success');
                 return;
@@ -5099,10 +5220,11 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
 
         function renderListaCodigosBarras() {
             const q = document.getElementById('codigos-barras-buscador').value.trim().toLowerCase();
-            const filtrados = q ? productos.filter(p => p.nombre.toLowerCase().includes(q)) : productos;
+            const base = productos.filter(p => p.controlStock !== 'individual');
+            const filtrados = q ? base.filter(p => p.nombre.toLowerCase().includes(q)) : base;
 
             if (filtrados.length === 0) {
-                document.getElementById('lista-codigos-barras').innerHTML = `<div style="text-align:center; padding:40px 20px; background:white; border-radius:15px;"><p style="color:#6c757d;">No se encontraron productos</p></div>`;
+                document.getElementById('lista-codigos-barras').innerHTML = `<div style="text-align:center; padding:40px 20px; background:white; border-radius:15px;"><p style="color:#6c757d;">No se encontraron productos (los que usan código individual se manejan desde su propia ficha)</p></div>`;
                 return;
             }
 
