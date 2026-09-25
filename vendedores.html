@@ -9,6 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.12.3/JsBarcode.all.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
@@ -531,6 +532,17 @@
                             <button class="btn" style="background: #e83e8c; color: white;" onclick="window.open('https://claude.ai/artifact/4uyvzZKueUtaZ4vehz1djS', '_blank')">
                                 <span class="icono-circulo">🎨</span> Material de marketing
                             </button>
+                            <button class="btn" style="background: #343a40; color: white;" onclick="mostrarVistaCodigosBarras()">
+                                <span class="icono-circulo">🏷️</span> Códigos de barras
+                            </button>
+                            <button class="btn" style="background: #0a6668; color: white; position:relative;" onclick="mostrarVistaSucursales()">
+                                <span class="icono-circulo">🏪</span> Sucursales
+                                <span id="sucursales-badge" style="display:none; background:#dc3545; color:white; border-radius:999px; padding:2px 8px; font-size:11px; font-weight:900; margin-left:4px; animation: pulso-herramientas 1.4s ease-in-out infinite;">!</span>
+                            </button>
+                            <button class="btn" style="background: #6f4e37; color: white; position:relative;" onclick="mostrarVistaFiado()">
+                                <span class="icono-circulo">💳</span> Fiado
+                                <span id="fiado-badge" style="display:none; background:#dc3545; color:white; border-radius:999px; padding:2px 8px; font-size:11px; font-weight:900; margin-left:4px; animation: pulso-herramientas 1.4s ease-in-out infinite;">!</span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -857,7 +869,11 @@
                     </div>
                 </div>
 
-                <div class="card" style="background:white; border-radius:15px; padding:20px; margin-bottom:14px; display:flex; gap:30px; flex-wrap:wrap;">
+                <div class="card" style="background:white; border-radius:15px; padding:20px; margin-bottom:14px;">
+                    <div style="display:flex; justify-content:flex-end; margin-bottom:14px;">
+                        <button class="btn" style="background:#dc3545; color:white; font-size:12.5px; padding:8px 14px;" onclick="generarReporteFinanzasPDF()">📄 Generar PDF</button>
+                    </div>
+                    <div style="display:flex; gap:30px; flex-wrap:wrap;">
                     <div>
                         <div style="font-size:12px; color:#6c757d; font-weight:700;">INGRESOS</div>
                         <div id="finanzas-ingresos" style="font-size:24px; font-weight:900; color:#28a745;">$0.00</div>
@@ -878,6 +894,7 @@
                         <div style="font-size:12px; color:#6c757d; font-weight:700;">🎁 DESCUENTOS OTORGADOS</div>
                         <div id="finanzas-descuentos-otorgados" style="font-size:16px; font-weight:700; color:#e83e8c;">$0.00</div>
                         <div style="font-size:10px; color:#adb5bd;">Informativo — ya está incluido en tus ingresos, no se resta de nuevo</div>
+                    </div>
                     </div>
                 </div>
 
@@ -907,7 +924,6 @@
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
                         <h3 style="font-size:15px; margin:0;">🧾 Gastos registrados</h3>
                         <div style="display:flex; gap:8px;">
-                            <button class="btn" style="background:#dc3545; color:white; font-size:12.5px; padding:8px 14px;" onclick="generarReporteFinanzasPDF()">📄 Generar PDF</button>
                             <button class="btn" style="background:#6610f2; color:white; font-size:12.5px; padding:8px 14px;" onclick="abrirModalGasto()">➕ Agregar gasto</button>
                         </div>
                     </div>
@@ -1048,6 +1064,115 @@
                 <p id="clientes-total-count" style="color:white; font-size:13px; font-weight:700; margin-bottom:12px;"></p>
                 <div id="lista-clientes"></div>
             </div>
+
+            <div id="vista-codigos-barras" style="display:none;">
+                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px; padding-top: 62px;">
+                </div>
+
+                <div class="card" style="background:white; border-radius:15px; padding:20px; margin-bottom:16px;">
+                    <p style="font-size:13px; color:#495057; margin-bottom:10px;">Genera un código de barras real (escaneable) para los productos que todavía no tengan uno, y arma hojas de etiquetas para recortar.</p>
+                    <div id="codigos-barras-resumen-faltantes" style="font-size:13px; font-weight:700; color:#dc3545; margin-bottom:10px;"></div>
+                    <button class="btn" style="background:#343a40; color:white;" onclick="asignarCodigosFaltantes()">🏷️ Asignar códigos a los que les falta</button>
+                </div>
+
+                <div class="card" style="background:white; border-radius:15px; padding:20px; margin-bottom:20px;">
+                    <input type="text" id="codigos-barras-buscador" class="buscador" placeholder="Buscar producto por nombre..." style="margin-bottom:10px;" oninput="renderListaCodigosBarras()">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+                        <label style="font-weight:600; font-size:13px;"><input type="checkbox" id="codigos-barras-seleccionar-todos" onchange="toggleSeleccionarTodosCodigos(this.checked)"> Seleccionar todos los visibles</label>
+                        <button class="btn" style="background:#17a2b8; color:white; font-size:13px; padding:9px 16px;" onclick="generarPDFEtiquetas()">📄 Generar PDF de etiquetas (chicas)</button>
+                    </div>
+                </div>
+                <div id="lista-codigos-barras"></div>
+            </div>
+
+            <div id="vista-sucursales" style="display:none;">
+                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px; padding-top: 62px;">
+                </div>
+                <div class="card" style="background:white; border-radius:15px; padding:20px; margin-bottom:16px;">
+                    <p style="font-size:13px; color:#495057; margin-bottom:10px;">Controla el inventario y las cuentas de cada sucursal que maneje otra persona por ti — sin que ella necesite entrar al sistema.</p>
+                    <button class="btn" style="background:#0a6668; color:white;" onclick="abrirModalAgregarSucursal()">➕ Agregar sucursal</button>
+                </div>
+                <div id="lista-sucursales"></div>
+            </div>
+
+            <div id="vista-fiado" style="display:none;">
+                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px; padding-top: 62px;">
+                </div>
+                <div class="card" style="background:white; border-radius:15px; padding:20px; margin-bottom:16px;">
+                    <p style="font-size:13px; color:#495057; margin-bottom:10px;">Lleva el control de a quién le fías producto, a qué precio, y cuánto te debe cada quien.</p>
+                    <button class="btn" style="background:#6f4e37; color:white;" onclick="abrirModalNuevoCredito()">➕ Entregar producto a crédito</button>
+                </div>
+                <div id="lista-fiado"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-agregar-sucursal" class="modal">
+        <div class="modal-content" onclick="event.stopPropagation()" style="max-width:420px;">
+            <h2 style="margin-bottom:15px;">➕ Nueva sucursal</h2>
+            <div class="form-group">
+                <label style="font-size:12px; font-weight:600;">Nombre</label>
+                <input type="text" id="sucursal-nombre" placeholder="Ej: Villa López" style="width:100%; padding:10px; border-radius:8px; border:1.5px solid #e9ecef; font-size:14px;">
+            </div>
+            <div class="form-group">
+                <label style="font-size:12px; font-weight:600;">Encargado</label>
+                <input type="text" id="sucursal-encargado" placeholder="Nombre de quien la maneja" style="width:100%; padding:10px; border-radius:8px; border:1.5px solid #e9ecef; font-size:14px;">
+            </div>
+            <div class="form-group">
+                <label style="font-size:12px; font-weight:600;">Teléfono de contacto</label>
+                <input type="text" id="sucursal-telefono" placeholder="10 dígitos" style="width:100%; padding:10px; border-radius:8px; border:1.5px solid #e9ecef; font-size:14px;">
+            </div>
+            <div style="display:flex; gap:10px; margin-top:8px;">
+                <button class="btn" style="flex:1; background:#0a6668; color:white;" onclick="guardarNuevaSucursal()">✅ Guardar</button>
+                <button class="btn" style="flex:1; background:white; color:#6c757d; border:2px solid #6c757d;" onclick="document.getElementById('modal-agregar-sucursal').classList.remove('show')">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-detalle-sucursal" class="modal">
+        <div class="modal-content" onclick="event.stopPropagation()" style="max-width:700px;">
+            <div style="position:sticky; top:0; z-index:5; background:white; margin:-30px -30px 14px; padding:24px 30px 14px; display:flex; justify-content:space-between; align-items:center;">
+                <h2 id="detalle-sucursal-titulo" style="margin:0; font-size:18px;"></h2>
+                <button type="button" onclick="document.getElementById('modal-detalle-sucursal').classList.remove('show')" style="width:32px; height:32px; border-radius:999px; border:none; background:#e9ecef; color:#495057; font-size:14px; cursor:pointer; flex-shrink:0;">✕</button>
+            </div>
+            <div id="detalle-sucursal-contenido"></div>
+        </div>
+    </div>
+
+    <div id="modal-nuevo-credito" class="modal">
+        <div class="modal-content" onclick="event.stopPropagation()" style="max-width:500px;">
+            <h2 style="margin-bottom:15px;">➕ Entregar producto a crédito</h2>
+            <div class="form-group">
+                <label style="font-size:12px; font-weight:600;">Nombre de la persona</label>
+                <input type="text" id="credito-nombre-persona" placeholder="Ej: Mi concuño" style="width:100%; padding:10px; border-radius:8px; border:1.5px solid #e9ecef; font-size:14px;">
+            </div>
+            <div class="form-group">
+                <label style="font-size:12px; font-weight:600;">Precio a usar para este crédito</label>
+                <select id="credito-tipo-precio" onchange="actualizarPreviewCredito()" style="width:100%; padding:10px; border-radius:8px; border:1.5px solid #e9ecef; font-size:14px;">
+                    <option value="mayoreo">Mayoreo</option>
+                    <option value="publico">Público</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label style="font-size:12px; font-weight:600;">Productos</label>
+                <input type="text" id="credito-buscador-producto" class="buscador" placeholder="Buscar producto..." style="margin-bottom:8px;" oninput="renderListaProductosCredito()">
+                <div id="credito-lista-productos" style="max-height:220px; overflow-y:auto; border:1.5px solid #e9ecef; border-radius:8px; padding:8px;"></div>
+            </div>
+            <div id="credito-total-preview" style="font-weight:800; font-size:15px; color:#6f4e37; margin:10px 0;"></div>
+            <div style="display:flex; gap:10px; margin-top:8px;">
+                <button class="btn" style="flex:1; background:#6f4e37; color:white;" onclick="guardarNuevoCredito()">✅ Registrar crédito</button>
+                <button class="btn" style="flex:1; background:white; color:#6c757d; border:2px solid #6c757d;" onclick="cerrarModalNuevoCredito()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-detalle-fiado" class="modal">
+        <div class="modal-content" onclick="event.stopPropagation()" style="max-width:600px;">
+            <div style="position:sticky; top:0; z-index:5; background:white; margin:-30px -30px 14px; padding:24px 30px 14px; display:flex; justify-content:space-between; align-items:center;">
+                <h2 id="detalle-fiado-titulo" style="margin:0; font-size:18px;"></h2>
+                <button type="button" onclick="document.getElementById('modal-detalle-fiado').classList.remove('show')" style="width:32px; height:32px; border-radius:999px; border:none; background:#e9ecef; color:#495057; font-size:14px; cursor:pointer; flex-shrink:0;">✕</button>
+            </div>
+            <div id="detalle-fiado-contenido"></div>
         </div>
     </div>
 
@@ -1891,6 +2016,11 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             }
         });
 
+        // Se cargan desde que arranca la app (no solo al entrar a esas secciones),
+        // para que el aviso del botón en Herramientas funcione aunque nunca las abras.
+        cargarSucursales();
+        cargarFiado();
+
         // Mide la altura real del encabezado principal (que puede variar según
         // cuántas filas ocupen sus botones en cada celular) y la guarda en una
         // variable CSS, para que los encabezados de cada sección (Pedidos,
@@ -1925,6 +2055,10 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 const el = document.getElementById(id);
                 if (el) total += parseInt(el.textContent, 10) || 0;
             });
+            const sucursalesBadgeEl = document.getElementById('sucursales-badge');
+            const fiadoBadgeEl = document.getElementById('fiado-badge');
+            if (sucursalesBadgeEl && sucursalesBadgeEl.style.display !== 'none') total += 1;
+            if (fiadoBadgeEl && fiadoBadgeEl.style.display !== 'none') total += 1;
             const badge = document.getElementById('herramientas-badge-total');
             if (total > 0) {
                 badge.textContent = total > 99 ? '99+' : total;
@@ -3944,7 +4078,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             actualizarBadgePedidos();
         });
 
-        const VISTAS_ADMIN = ['vista-pedidos', 'vista-cupones', 'vista-menciones', 'vista-vip', 'vista-distribuidores', 'vista-resenas', 'vista-envios', 'vista-historial-envios', 'vista-historial-ventas', 'vista-finanzas', 'vista-team-coaching', 'vista-coaching', 'vista-sorteos', 'vista-clientes'];
+        const VISTAS_ADMIN = ['vista-pedidos', 'vista-cupones', 'vista-menciones', 'vista-vip', 'vista-distribuidores', 'vista-resenas', 'vista-envios', 'vista-historial-envios', 'vista-historial-ventas', 'vista-finanzas', 'vista-team-coaching', 'vista-coaching', 'vista-sorteos', 'vista-clientes', 'vista-codigos-barras', 'vista-sucursales', 'vista-fiado'];
 
         const TITULOS_VISTAS = {
             'vista-pedidos': '📋 Pedidos pendientes de pago',
@@ -3960,7 +4094,10 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             'vista-team-coaching': '🥊 Team Coaching',
             'vista-coaching': '💪 Coaching',
             'vista-sorteos': '🎟️ Sorteos Mensuales',
-            'vista-clientes': '👥 Clientes'
+            'vista-clientes': '👥 Clientes',
+            'vista-codigos-barras': '🏷️ Códigos de barras',
+            'vista-sucursales': '🏪 Sucursales',
+            'vista-fiado': '💳 Fiado'
         };
 
         function mostrarBarraVolverCatalogo(idVista) {
@@ -4892,6 +5029,991 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             mostrarBarraVolverCatalogo('vista-clientes');
             document.getElementById('clientes-buscador').value = '';
             cargarClientesLista();
+        }
+
+        // ===== Códigos de barras =====
+        let codigosBarrasSeleccionados = new Set();
+
+        function mostrarVistaCodigosBarras() {
+            document.getElementById('filtros-wrap').style.display = 'none';
+            document.getElementById('productos').style.display = 'none';
+            ocultarTodasLasVistas();
+            document.getElementById('vista-codigos-barras').style.display = 'block';
+            mostrarBarraVolverCatalogo('vista-codigos-barras');
+            document.getElementById('codigos-barras-buscador').value = '';
+            codigosBarrasSeleccionados = new Set();
+            renderResumenCodigosBarras();
+            renderListaCodigosBarras();
+        }
+
+        function renderResumenCodigosBarras() {
+            const faltantes = productos.filter(p => !p.codigoBarras).length;
+            document.getElementById('codigos-barras-resumen-faltantes').textContent =
+                faltantes === 0 ? '✅ Todos tus productos ya tienen código de barras.' : `⚠️ ${faltantes} producto${faltantes === 1 ? '' : 's'} sin código de barras.`;
+        }
+
+        // Calcula el 13vo dígito de verificación de un código EAN-13 a partir de los primeros 12.
+        function calcularDigitoVerificadorEAN13(doce) {
+            let suma = 0;
+            for (let i = 0; i < 12; i++) {
+                const d = parseInt(doce[i], 10);
+                suma += (i % 2 === 0) ? d : d * 3;
+            }
+            return (10 - (suma % 10)) % 10;
+        }
+
+        // Genera un código EAN-13 nuevo y único, usando el prefijo "20" que el estándar
+        // reserva para uso interno de tiendas (nunca choca con un código real de marca).
+        async function generarCodigoBarrasNuevo() {
+            const resultado = await db.ref('config/contadorCodigoBarras').transaction(actual => (actual || 0) + 1);
+            const contador = resultado.snapshot.val();
+            const doce = '20' + String(contador).padStart(10, '0');
+            const check = calcularDigitoVerificadorEAN13(doce);
+            return doce + String(check);
+        }
+
+        async function asignarCodigosFaltantes() {
+            const faltantes = productos.filter(p => !p.codigoBarras);
+            if (faltantes.length === 0) {
+                mostrarNotif('✅ Todos tus productos ya tienen código de barras', 'success');
+                return;
+            }
+            if (!confirm(`¿Asignar un código de barras nuevo a ${faltantes.length} producto${faltantes.length === 1 ? '' : 's'}?`)) return;
+
+            for (const p of faltantes) {
+                const codigo = await generarCodigoBarrasNuevo();
+                await db.ref('productos/' + p.id).update({ codigoBarras: codigo });
+            }
+            mostrarNotif(`🏷️ Se asignaron ${faltantes.length} código${faltantes.length === 1 ? '' : 's'} nuevo${faltantes.length === 1 ? '' : 's'}`, 'success');
+            renderResumenCodigosBarras();
+            renderListaCodigosBarras();
+        }
+
+        function renderListaCodigosBarras() {
+            const q = document.getElementById('codigos-barras-buscador').value.trim().toLowerCase();
+            const filtrados = q ? productos.filter(p => p.nombre.toLowerCase().includes(q)) : productos;
+
+            if (filtrados.length === 0) {
+                document.getElementById('lista-codigos-barras').innerHTML = `<div style="text-align:center; padding:40px 20px; background:white; border-radius:15px;"><p style="color:#6c757d;">No se encontraron productos</p></div>`;
+                return;
+            }
+
+            document.getElementById('lista-codigos-barras').innerHTML = filtrados.map(p => `
+                <div class="pedido-card" style="display:flex; align-items:center; gap:12px; border-left-color:${p.codigoBarras ? '#28a745' : '#dc3545'};">
+                    <input type="checkbox" ${codigosBarrasSeleccionados.has(p.id) ? 'checked' : ''} onchange="toggleSeleccionCodigo('${p.id}', this.checked)" style="width:20px; height:20px; flex-shrink:0;">
+                    <div style="flex:1;">
+                        <strong>${p.nombre}</strong>
+                        <div style="font-size:12px; color:${p.codigoBarras ? '#28a745' : '#dc3545'}; font-family:monospace;">${p.codigoBarras || 'Sin código de barras'}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleSeleccionCodigo(id, marcado) {
+            if (marcado) codigosBarrasSeleccionados.add(id);
+            else codigosBarrasSeleccionados.delete(id);
+        }
+
+        function toggleSeleccionarTodosCodigos(marcado) {
+            const q = document.getElementById('codigos-barras-buscador').value.trim().toLowerCase();
+            const filtrados = q ? productos.filter(p => p.nombre.toLowerCase().includes(q)) : productos;
+            filtrados.forEach(p => {
+                if (marcado) codigosBarrasSeleccionados.add(p.id);
+                else codigosBarrasSeleccionados.delete(p.id);
+            });
+            renderListaCodigosBarras();
+        }
+
+        async function generarPDFEtiquetas() {
+            let seleccionados = productos.filter(p => codigosBarrasSeleccionados.has(p.id));
+            if (seleccionados.length === 0) {
+                alert('Selecciona al menos un producto.');
+                return;
+            }
+            const sinCodigo = seleccionados.filter(p => !p.codigoBarras);
+            if (sinCodigo.length > 0) {
+                if (!confirm(`${sinCodigo.length} de los productos que elegiste todavía no tienen código — ¿quieres que se les asigne uno ahora para poder incluirlos?`)) {
+                    seleccionados = seleccionados.filter(p => p.codigoBarras);
+                    if (seleccionados.length === 0) { alert('No queda ningún producto con código para imprimir.'); return; }
+                } else {
+                    for (const p of sinCodigo) {
+                        const codigo = await generarCodigoBarrasNuevo();
+                        await db.ref('productos/' + p.id).update({ codigoBarras: codigo });
+                        p.codigoBarras = codigo;
+                    }
+                    renderResumenCodigosBarras();
+                }
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const COLS = 5, ROWS = 6;
+            const MARGEN = 8;
+            const anchoUtil = 210 - MARGEN * 2;
+            const altoUtil = 297 - MARGEN * 2;
+            const anchoCelda = anchoUtil / COLS;
+            const altoCelda = altoUtil / ROWS;
+            const porHoja = COLS * ROWS;
+
+            const canvasTemp = document.createElement('canvas');
+
+            seleccionados.forEach((p, i) => {
+                const posEnHoja = i % porHoja;
+                if (i > 0 && posEnHoja === 0) doc.addPage();
+                const col = posEnHoja % COLS;
+                const row = Math.floor(posEnHoja / COLS);
+                const x = MARGEN + col * anchoCelda;
+                const y = MARGEN + row * altoCelda;
+
+                doc.setDrawColor(200);
+                doc.setLineDashPattern([1, 1], 0);
+                doc.rect(x, y, anchoCelda, altoCelda);
+                doc.setLineDashPattern([], 0);
+
+                try {
+                    JsBarcode(canvasTemp, p.codigoBarras, { format: 'EAN13', width: 1.4, height: 35, fontSize: 11, margin: 2 });
+                    const imgData = canvasTemp.toDataURL('image/png');
+                    const imgAncho = anchoCelda - 4;
+                    const imgAlto = imgAncho * (canvasTemp.height / canvasTemp.width);
+                    doc.addImage(imgData, 'PNG', x + 2, y + 2, imgAncho, Math.min(imgAlto, altoCelda - 12));
+                } catch (e) {
+                    console.error('Error generando código de barras para', p.nombre, e);
+                }
+
+                doc.setFontSize(6.5);
+                doc.setTextColor(0);
+                const nombreCorto = p.nombre.length > 26 ? p.nombre.slice(0, 24) + '…' : p.nombre;
+                doc.text(nombreCorto, x + anchoCelda / 2, y + altoCelda - 3, { align: 'center', maxWidth: anchoCelda - 4 });
+            });
+
+            doc.save(`etiquetas-artfit-${new Date().toISOString().slice(0, 10)}.pdf`);
+            mostrarNotif(`📄 PDF generado con ${seleccionados.length} etiqueta${seleccionados.length === 1 ? '' : 's'}`, 'success');
+        }
+
+        // ===== Sucursales =====
+        let sucursalesCache = [];
+        let sucursalActualId = null;
+        let sucursalActualStock = {};
+        let sucursalEnvioSeleccion = {};
+        let sucursalVentaSeleccion = {};
+        const DIAS_AVISO_SUCURSAL = 30;
+
+        function diasDesde(fechaISO) {
+            if (!fechaISO) return null;
+            return Math.floor((Date.now() - new Date(fechaISO).getTime()) / (1000 * 60 * 60 * 24));
+        }
+
+        function mostrarVistaSucursales() {
+            document.getElementById('filtros-wrap').style.display = 'none';
+            document.getElementById('productos').style.display = 'none';
+            ocultarTodasLasVistas();
+            document.getElementById('vista-sucursales').style.display = 'block';
+            mostrarBarraVolverCatalogo('vista-sucursales');
+            cargarSucursales();
+        }
+
+        function cargarSucursales() {
+            db.ref('sucursales').on('value', snap => {
+                const data = snap.val();
+                sucursalesCache = data ? Object.keys(data).map(k => ({ id: k, ...data[k] })) : [];
+                renderListaSucursales();
+                actualizarBadgeSucursales();
+                if (sucursalActualId && document.getElementById('modal-detalle-sucursal').classList.contains('show')) {
+                    renderDetalleSucursal();
+                }
+            });
+        }
+
+        function renderListaSucursales() {
+            const cont = document.getElementById('lista-sucursales');
+            if (sucursalesCache.length === 0) {
+                cont.innerHTML = `<div style="text-align:center; padding:40px 20px; background:white; border-radius:15px;"><div style="font-size:60px;">🏪</div><h3 style="color:#6c757d; margin-top:10px;">Todavía no tienes sucursales</h3></div>`;
+                return;
+            }
+            cont.innerHTML = sucursalesCache.map(s => {
+                const dias = diasDesde(s.ultimoReporteFecha || s.fechaAlta);
+                const avisoActivo = dias !== null && dias >= DIAS_AVISO_SUCURSAL;
+                return `
+                <div class="pedido-card" style="cursor:pointer; border-left-color:${avisoActivo ? '#dc3545' : '#0a6668'};" onclick="abrirDetalleSucursal('${s.id}')">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                        <div>
+                            <strong style="font-size:16px;">📍 ${s.nombre}</strong>
+                            ${(s.pendienteCobro || 0) > 0 ? `<span style="background:#fff8e6; color:#7a5c00; border:1px solid #ffc107; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:800; margin-left:4px;">⏳ Esperando pago</span>` : ''}
+                            ${avisoActivo ? `<span style="color:#dc3545; font-size:12px; font-weight:800;">⚠️ Sin reporte hace ${dias} días</span>` : ''}
+                            <div style="font-size:12px; color:#6c757d;">Encargado: ${s.encargado || '—'}</div>
+                        </div>
+                        <div style="text-align:right; font-size:12px;">
+                            <div>Invertido: <strong>$${(s.invertido || 0).toFixed(2)}</strong></div>
+                            <div>Pendiente: <strong style="color:#dc3545;">$${(s.pendienteCobro || 0).toFixed(2)}</strong></div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function actualizarBadgeSucursales() {
+            const alguno = sucursalesCache.some(s => {
+                const dias = diasDesde(s.ultimoReporteFecha || s.fechaAlta);
+                const sinReporte = dias !== null && dias >= DIAS_AVISO_SUCURSAL;
+                const pagoPendiente = (s.pendienteCobro || 0) > 0;
+                return sinReporte || pagoPendiente;
+            });
+            document.getElementById('sucursales-badge').style.display = alguno ? 'inline-block' : 'none';
+            actualizarBadgeHerramientas();
+        }
+
+        function abrirModalAgregarSucursal() {
+            document.getElementById('sucursal-nombre').value = '';
+            document.getElementById('sucursal-encargado').value = '';
+            document.getElementById('sucursal-telefono').value = '';
+            document.getElementById('modal-agregar-sucursal').classList.add('show');
+        }
+
+        function guardarNuevaSucursal() {
+            const nombre = document.getElementById('sucursal-nombre').value.trim();
+            const encargado = document.getElementById('sucursal-encargado').value.trim();
+            const telefono = document.getElementById('sucursal-telefono').value.trim();
+            if (!nombre) { alert('Escribe un nombre para la sucursal.'); return; }
+            db.ref('sucursales').push({
+                nombre, encargado, telefono,
+                fechaAlta: new Date().toISOString(),
+                invertido: 0, pendienteCobro: 0, cobrado: 0, costoAdquisicionPendiente: 0,
+                ultimoReporteFecha: null, reportesTotales: 0, avisosHistoricos: 0
+            }).then(() => {
+                document.getElementById('modal-agregar-sucursal').classList.remove('show');
+                mostrarNotif('🏪 Sucursal agregada', 'success');
+            });
+        }
+
+        async function abrirDetalleSucursal(id) {
+            sucursalActualId = id;
+            sucursalEnvioSeleccion = {};
+            sucursalVentaSeleccion = {};
+            const s = sucursalesCache.find(x => x.id === id);
+            document.getElementById('detalle-sucursal-titulo').innerHTML = '📍 ' + s.nombre + ((s.pendienteCobro || 0) > 0 ? ' <span style="background:#fff8e6; color:#7a5c00; border:1px solid #ffc107; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:800;">⏳ Esperando pago</span>' : '');
+            document.getElementById('modal-detalle-sucursal').classList.add('show');
+            await cargarStockSucursal(id);
+            renderDetalleSucursal();
+            cargarAnalisisSucursal(id);
+            cargarHistorialEnviosSucursal(id);
+        }
+
+        async function cargarStockSucursal(id) {
+            const snap = await db.ref('sucursales/' + id + '/stock').once('value');
+            sucursalActualStock = snap.val() || {};
+        }
+
+        function renderDetalleSucursal() {
+            const s = sucursalesCache.find(x => x.id === sucursalActualId);
+            if (!s) return;
+            const dias = diasDesde(s.ultimoReporteFecha || s.fechaAlta);
+            const avisoActivo = dias !== null && dias >= DIAS_AVISO_SUCURSAL;
+            const itemsStock = Object.entries(sucursalActualStock).filter(([pid, cant]) => cant > 0);
+
+            document.getElementById('detalle-sucursal-contenido').innerHTML = `
+                <div style="display:flex; gap:14px; flex-wrap:wrap; background:#f8f9fa; border-radius:10px; padding:14px; margin-bottom:16px;">
+                    <div><div style="font-size:11px; color:#6c757d; font-weight:700;">INVERTIDO</div><div style="font-size:18px; font-weight:900; color:#0a6668;">$${(s.invertido || 0).toFixed(2)}</div></div>
+                    <div><div style="font-size:11px; color:#6c757d; font-weight:700;">PENDIENTE DE COBRO</div><div style="font-size:18px; font-weight:900; color:#dc3545;">$${(s.pendienteCobro || 0).toFixed(2)}</div></div>
+                    <div><div style="font-size:11px; color:#6c757d; font-weight:700;">YA COBRADO</div><div style="font-size:18px; font-weight:900; color:#28a745;">$${(s.cobrado || 0).toFixed(2)}</div></div>
+                </div>
+                <div style="font-size:12.5px; color:${avisoActivo ? '#dc3545' : '#6c757d'}; font-weight:700; margin-bottom:16px;">
+                    ${dias === null ? 'Todavía sin ningún reporte' : `${dias} días desde el último reporte`} ${avisoActivo ? '⚠️' : ''} · 📊 ${s.reportesTotales || 0} reportes históricos · ${s.avisosHistoricos || 0} avisos de retraso generados
+                </div>
+
+                ${seccionDesplegable('sucursal-enviar', '📤 Enviar productos', 'Descuenta tu stock y suma a Invertido', `
+                    <input type="text" id="sucursal-envio-buscador" class="buscador" placeholder="Buscar producto..." style="margin-bottom:8px;" oninput="renderListaEnvioSucursal()">
+                    <div id="sucursal-envio-lista" style="max-height:220px; overflow-y:auto; border:1.5px solid #e9ecef; border-radius:8px; padding:8px; margin-bottom:10px;"></div>
+                    <label style="font-size:12px; font-weight:600;">Costo de envío (opcional — se registra como gasto de inmediato)</label>
+                    <input type="number" id="sucursal-costo-envio" min="0" step="0.01" placeholder="0.00" style="width:100%; padding:8px; border-radius:8px; border:1.5px solid #e9ecef; margin:4px 0 10px; box-sizing:border-box;">
+                    <button class="btn" style="width:100%; background:#0a6668; color:white;" onclick="confirmarEnvioSucursal()">📤 Confirmar envío y generar PDF</button>
+                `)}
+
+                ${seccionDesplegable('sucursal-venta', '💰 Registrar venta reportada', 'Ajusta lo que ya vendió', itemsStock.length === 0 ? '<p style="font-size:12.5px; color:#adb5bd;">No tiene productos en existencia para vender.</p>' : `
+                    <div id="sucursal-venta-lista">${itemsStock.map(([pid, cant]) => {
+                        const p = productos.find(x => x.id === pid);
+                        const nombre = p ? p.nombre : '(producto eliminado)';
+                        return `<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid #f1f3f5;">
+                            <span style="font-size:13px; flex:1;">${nombre} <span style="color:#adb5bd; font-size:11px;">(tiene ${cant})</span></span>
+                            <input type="number" min="0" max="${cant}" value="0" style="width:60px; padding:5px; border-radius:6px; border:1.5px solid #e9ecef;" onchange="sucursalVentaSeleccion['${pid}'] = parseInt(this.value)||0">
+                        </div>`;
+                    }).join('')}</div>
+                    <button class="btn" style="width:100%; background:#6610f2; color:white; margin-top:10px;" onclick="confirmarVentaReportadaSucursal()">💰 Registrar venta reportada</button>
+                `)}
+
+                ${(s.pendienteCobro || 0) > 0 ? `
+                <div style="background:#fff8e6; border:1.5px solid #ffc107; border-radius:10px; padding:14px; margin-bottom:14px;">
+                    <div style="font-weight:800; font-size:14px; color:#7a5c00; margin-bottom:8px;">✅ Confirmar cobro — te debe $${s.pendienteCobro.toFixed(2)}</div>
+                    <button class="btn" style="width:100%; background:#28a745; color:white;" onclick="confirmarCobroSucursal()">Ya me pagó $${s.pendienteCobro.toFixed(2)}</button>
+                </div>` : ''}
+
+                ${seccionDesplegable('sucursal-analisis', '📊 Análisis de productos', 'Más vendidos, todo lo vendido y lo que tiene', '<div id="sucursal-analisis-contenido">Cargando…</div>')}
+
+                ${seccionDesplegable('sucursal-historial-envios', '📋 Historial de envíos', 'Cada resurtida por separado', '<div id="sucursal-historial-envios-lista">Cargando…</div>')}
+
+                <button class="btn" style="width:100%; background:white; color:#dc3545; border:2px solid #dc3545; margin-top:20px;" onclick="eliminarSucursal()">🗑️ Eliminar sucursal</button>
+            `;
+            renderListaEnvioSucursal();
+        }
+
+        function renderListaEnvioSucursal() {
+            const buscadorEl = document.getElementById('sucursal-envio-buscador');
+            if (!buscadorEl) return;
+            const q = buscadorEl.value.trim().toLowerCase();
+            const filtrados = q ? productos.filter(p => p.nombre.toLowerCase().includes(q)) : productos;
+            document.getElementById('sucursal-envio-lista').innerHTML = filtrados.slice(0, 60).map(p => `
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid #f1f3f5;">
+                    <span style="font-size:12.5px; flex:1;">${p.nombre}</span>
+                    <input type="number" min="0" value="${sucursalEnvioSeleccion[p.id] || 0}" style="width:55px; padding:4px; border-radius:6px; border:1.5px solid #e9ecef;" onchange="sucursalEnvioSeleccion['${p.id}'] = parseInt(this.value)||0">
+                </div>
+            `).join('');
+        }
+
+        async function confirmarEnvioSucursal() {
+            const itemsSel = Object.entries(sucursalEnvioSeleccion).filter(([id, cant]) => cant > 0);
+            if (itemsSel.length === 0) { alert('Selecciona al menos un producto con cantidad mayor a 0.'); return; }
+            const costoEnvio = parseFloat(document.getElementById('sucursal-costo-envio').value) || 0;
+            const s = sucursalesCache.find(x => x.id === sucursalActualId);
+
+            const detalleItems = [];
+            let totalInvertido = 0;
+            for (const [pid, cant] of itemsSel) {
+                const p = productos.find(x => x.id === pid);
+                if (!p) continue;
+                detalleItems.push({ productoId: pid, nombre: p.nombre, cantidad: cant, precioAdquisicion: p.precioAdquisicion, precioMayoreo: p.precioMayoreo, precioPublico: p.precioPublico });
+                totalInvertido += p.precioAdquisicion * cant;
+            }
+            if (detalleItems.length === 0) { alert('No se encontraron los productos seleccionados.'); return; }
+
+            const enviosSnap = await db.ref(`sucursales/${sucursalActualId}/envios`).once('value');
+            const esPrimero = !enviosSnap.exists();
+
+            // Generamos el PDF lo antes posible después del clic — algunos navegadores
+            // bloquean la descarga automática si pasa mucho tiempo desde la acción del
+            // usuario, así que lo hacemos antes de la seguidilla de escrituras a Firebase.
+            try {
+                generarPDFEnvioSucursal(s, detalleItems, esPrimero);
+            } catch (e) {
+                console.error('Error generando el PDF de envío:', e);
+                mostrarNotif('⚠️ El envío se va a registrar, pero el PDF no se pudo generar. Avísame si vuelve a pasar.', 'error');
+            }
+
+            for (const it of detalleItems) {
+                const p = productos.find(x => x.id === it.productoId);
+                if (p && p.cantidadStock !== null && p.cantidadStock !== undefined) {
+                    const nuevoStock = Math.max(0, p.cantidadStock - it.cantidad);
+                    await db.ref('productos/' + it.productoId).update({ cantidadStock: nuevoStock, enStock: nuevoStock > 0 });
+                }
+                const actual = sucursalActualStock[it.productoId] || 0;
+                await db.ref(`sucursales/${sucursalActualId}/stock/${it.productoId}`).set(actual + it.cantidad);
+                sucursalActualStock[it.productoId] = actual + it.cantidad;
+            }
+
+            await db.ref(`sucursales/${sucursalActualId}/envios`).push({ fecha: new Date().toISOString(), items: detalleItems, costoEnvio });
+            await db.ref('sucursales/' + sucursalActualId).update({ invertido: (s.invertido || 0) + totalInvertido });
+
+            if (costoEnvio > 0) {
+                db.ref('gastos').push({
+                    concepto: `Envío a sucursal ${s.nombre}`,
+                    categoria: 'Envío Sucursal',
+                    monto: costoEnvio,
+                    fecha: new Date().toISOString().slice(0, 10),
+                    notas: '',
+                    fechaRegistro: new Date().toISOString()
+                });
+            }
+
+            mostrarNotif('📤 Envío registrado', 'success');
+            sucursalEnvioSeleccion = {};
+            document.getElementById('sucursal-costo-envio').value = '';
+            renderDetalleSucursal();
+            cargarHistorialEnviosSucursal(sucursalActualId);
+        }
+
+        function generarPDFEnvioSucursal(sucursal, items, esPrimero) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.addFileToVFS('DejaVuSans.ttf', PDF_FONT_REGULAR);
+            doc.addFont('DejaVuSans.ttf', 'DejaVuSans', 'normal');
+            doc.addFileToVFS('DejaVuSans-Bold.ttf', PDF_FONT_BOLD);
+            doc.addFont('DejaVuSans-Bold.ttf', 'DejaVuSans', 'bold');
+            doc.setFont('DejaVuSans', 'normal');
+
+            doc.addImage(PDF_LOGO, 'PNG', 14, 10, 20, 20);
+            doc.setFontSize(18); doc.setTextColor(23, 162, 184);
+            doc.text('ArtFit Supplements', 40, 19);
+            doc.setFontSize(10); doc.setTextColor(100);
+            doc.text('Envío a sucursal: ' + sucursal.nombre, 40, 25);
+
+            doc.setFontSize(10); doc.setTextColor(0);
+            doc.text('Fecha: ' + new Date().toLocaleDateString('es-MX'), 14, 40);
+
+            doc.autoTable({
+                startY: 46,
+                head: [['Producto', 'Cantidad', 'Mayoreo', 'Público']],
+                body: items.map(it => [it.nombre, String(it.cantidad), '$' + it.precioMayoreo.toFixed(2), '$' + it.precioPublico.toFixed(2)]),
+                styles: { font: 'DejaVuSans' },
+                headStyles: { fillColor: [10, 102, 104] }
+            });
+
+            let y = doc.lastAutoTable.finalY + 10;
+
+            if (esPrimero) {
+                doc.setFont('DejaVuSans', 'bold'); doc.setFontSize(12); doc.setTextColor(0);
+                doc.text('Cómo funciona', 14, y); y += 7;
+                doc.setFont('DejaVuSans', 'normal'); doc.setFontSize(9.5);
+                const explicacion = [
+                    'Te entregamos estos productos para que los vendas en tu local.',
+                    'Cada producto tiene dos precios: el de Mayoreo y el de Público.',
+                    'Lo único que nos tienes que reportar es el precio de MAYOREO de lo que vayas vendiendo: esa es la cantidad que nos corresponde a nosotros.',
+                    'La diferencia entre lo que tú cobras y el precio de Mayoreo es completamente tuya, no nos la tienes que reportar.',
+                    'Usa la tabla de las siguientes hojas para ir anotando lo que vendas, y repórtanos cuando puedas.'
+                ];
+                explicacion.forEach(linea => {
+                    const partido = doc.splitTextToSize(linea, 180);
+                    doc.text(partido, 14, y);
+                    y += partido.length * 5 + 2;
+                });
+            } else {
+                doc.setFontSize(9); doc.setTextColor(120); doc.setFont('DejaVuSans', 'normal');
+                doc.text('Recuerda: repórtanos tus ventas al precio de Mayoreo — esa es la cantidad que nos corresponde.', 14, y);
+            }
+
+            for (let pagina = 0; pagina < 3; pagina++) {
+                doc.addPage();
+                let y2 = 20;
+                doc.setFont('DejaVuSans', 'bold'); doc.setFontSize(11); doc.setTextColor(0);
+                doc.text(`Registro de ventas — hoja ${pagina + 1} de 3`, 14, y2);
+                const filas = Array.from({ length: 25 }, () => ['', '', '']);
+                doc.autoTable({
+                    startY: y2 + 5,
+                    head: [['Cantidad', 'Producto', 'Fecha']],
+                    body: filas,
+                    styles: { font: 'DejaVuSans', minCellHeight: 8 },
+                    headStyles: { fillColor: [10, 102, 104] }
+                });
+            }
+
+            doc.save(`envio-${sucursal.nombre.replace(/\s+/g, '-')}-${new Date().toISOString().slice(0, 10)}.pdf`);
+        }
+
+        function generarPDFAnalisisSucursal() {
+            const s = sucursalesCache.find(x => x.id === sucursalActualId);
+            if (!s) return;
+            const { ordenado, itemsStock } = sucursalAnalisisCache;
+
+            const itemsStockOrdenados = itemsStock
+                .map(([pid, cant]) => {
+                    const p = productos.find(x => x.id === pid);
+                    return { nombre: p ? p.nombre : '(producto eliminado)', cantidad: cant };
+                })
+                .sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+            if (ordenado.length === 0 && itemsStockOrdenados.length === 0) {
+                alert('Todavía no hay nada que mostrar en el análisis de esta sucursal.');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.addFileToVFS('DejaVuSans.ttf', PDF_FONT_REGULAR);
+            doc.addFont('DejaVuSans.ttf', 'DejaVuSans', 'normal');
+            doc.addFileToVFS('DejaVuSans-Bold.ttf', PDF_FONT_BOLD);
+            doc.addFont('DejaVuSans-Bold.ttf', 'DejaVuSans', 'bold');
+            doc.setFont('DejaVuSans', 'normal');
+
+            doc.addImage(PDF_LOGO, 'PNG', 14, 10, 20, 20);
+            doc.setFontSize(18); doc.setTextColor(23, 162, 184);
+            doc.text('ArtFit Supplements', 40, 19);
+            doc.setFontSize(10); doc.setTextColor(100);
+            doc.text('Análisis de productos — ' + s.nombre, 40, 25);
+            doc.setFontSize(9); doc.setTextColor(0);
+            doc.text('Fecha: ' + new Date().toLocaleDateString('es-MX'), 14, 40);
+
+            let y = 46;
+
+            doc.setFont('DejaVuSans', 'bold'); doc.setFontSize(12); doc.setTextColor(0);
+            doc.text('🔥 Más vendidos (Top 10)', 14, y); y += 4;
+            if (ordenado.length === 0) {
+                doc.setFont('DejaVuSans', 'normal'); doc.setFontSize(9); doc.setTextColor(120);
+                doc.text('Sin ventas reportadas todavía.', 14, y + 4);
+                y += 12;
+            } else {
+                doc.autoTable({
+                    startY: y + 2,
+                    head: [['Producto', 'Unidades vendidas']],
+                    body: ordenado.slice(0, 10).map(([nombre, cant]) => [nombre, String(cant)]),
+                    styles: { font: 'DejaVuSans' },
+                    headStyles: { fillColor: [10, 102, 104] }
+                });
+                y = doc.lastAutoTable.finalY + 10;
+            }
+
+            doc.setFont('DejaVuSans', 'bold'); doc.setFontSize(12); doc.setTextColor(0);
+            doc.text('📃 Todo lo que ha vendido', 14, y); y += 4;
+            if (ordenado.length === 0) {
+                doc.setFont('DejaVuSans', 'normal'); doc.setFontSize(9); doc.setTextColor(120);
+                doc.text('Sin ventas reportadas todavía.', 14, y + 4);
+                y += 12;
+            } else {
+                doc.autoTable({
+                    startY: y + 2,
+                    head: [['Producto', 'Unidades vendidas']],
+                    body: ordenado.map(([nombre, cant]) => [nombre, String(cant)]),
+                    styles: { font: 'DejaVuSans' },
+                    headStyles: { fillColor: [10, 102, 104] }
+                });
+                y = doc.lastAutoTable.finalY + 10;
+            }
+
+            if (y > 250) { doc.addPage(); y = 20; }
+            doc.setFont('DejaVuSans', 'bold'); doc.setFontSize(12); doc.setTextColor(0);
+            doc.text('📦 Lo que debería tener en existencia ahorita', 14, y); y += 4;
+            if (itemsStockOrdenados.length === 0) {
+                doc.setFont('DejaVuSans', 'normal'); doc.setFontSize(9); doc.setTextColor(120);
+                doc.text('No tiene nada en existencia.', 14, y + 4);
+            } else {
+                doc.autoTable({
+                    startY: y + 2,
+                    head: [['Producto', 'Cantidad que debería tener']],
+                    body: itemsStockOrdenados.map(it => [it.nombre, String(it.cantidad)]),
+                    styles: { font: 'DejaVuSans' },
+                    headStyles: { fillColor: [10, 102, 104] }
+                });
+            }
+
+            doc.save(`analisis-${s.nombre.replace(/\s+/g, '-')}-${new Date().toISOString().slice(0, 10)}.pdf`);
+        }
+
+        async function confirmarVentaReportadaSucursal() {
+            const items = Object.entries(sucursalVentaSeleccion).filter(([id, cant]) => cant > 0);
+            if (items.length === 0) { alert('Indica cuánto vendió de al menos un producto.'); return; }
+            const s = sucursalesCache.find(x => x.id === sucursalActualId);
+            const detalleItems = [];
+            let montoDebido = 0;
+            let costoAdquisicionEsto = 0;
+
+            for (const [pid, cant] of items) {
+                const p = productos.find(x => x.id === pid);
+                if (!p) continue;
+                const stockActual = sucursalActualStock[pid] || 0;
+                if (cant > stockActual) { alert(`No puede haber vendido más de lo que tiene (${p.nombre}: tiene ${stockActual}).`); return; }
+                detalleItems.push({ productoId: pid, nombre: p.nombre, cantidad: cant });
+                montoDebido += p.precioMayoreo * cant;
+                costoAdquisicionEsto += p.precioAdquisicion * cant;
+            }
+
+            for (const [pid, cant] of items) {
+                const stockActual = sucursalActualStock[pid] || 0;
+                await db.ref(`sucursales/${sucursalActualId}/stock/${pid}`).set(stockActual - cant);
+                sucursalActualStock[pid] = stockActual - cant;
+            }
+
+            const diasAntes = diasDesde(s.ultimoReporteFecha || s.fechaAlta);
+            const avisosEstaVez = diasAntes !== null ? Math.floor(diasAntes / DIAS_AVISO_SUCURSAL) : 0;
+
+            await db.ref(`sucursales/${sucursalActualId}/ventasReportadas`).push({
+                fecha: new Date().toISOString(), items: detalleItems, monto: montoDebido, avisosGenerados: avisosEstaVez
+            });
+
+            await db.ref('sucursales/' + sucursalActualId).update({
+                pendienteCobro: (s.pendienteCobro || 0) + montoDebido,
+                costoAdquisicionPendiente: (s.costoAdquisicionPendiente || 0) + costoAdquisicionEsto,
+                ultimoReporteFecha: new Date().toISOString(),
+                reportesTotales: (s.reportesTotales || 0) + 1,
+                avisosHistoricos: (s.avisosHistoricos || 0) + avisosEstaVez
+            });
+
+            mostrarNotif(`💰 Venta reportada — te debe $${montoDebido.toFixed(2)} más`, 'success');
+            sucursalVentaSeleccion = {};
+            cargarAnalisisSucursal(sucursalActualId);
+        }
+
+        async function confirmarCobroSucursal() {
+            const s = sucursalesCache.find(x => x.id === sucursalActualId);
+            const monto = s.pendienteCobro || 0;
+            if (monto <= 0) return;
+            if (!confirm(`¿Confirmas que ${s.encargado || 'te'} pagó $${monto.toFixed(2)}?`)) return;
+
+            const costoBase = s.costoAdquisicionPendiente || 0;
+            const gananciaReal = monto - costoBase;
+
+            await db.ref(`sucursales/${sucursalActualId}/cobros`).push({ fecha: new Date().toISOString(), monto });
+
+            await db.ref('ventas').push({
+                pedidoId: null,
+                numeroOrden: null,
+                clienteNombre: `Sucursal ${s.nombre}`,
+                clienteTelefono: null,
+                origen: 'sucursal',
+                sucursalId: sucursalActualId,
+                items: [],
+                total: monto,
+                ganancia: gananciaReal,
+                metodoPago: 'transferencia',
+                fecha: new Date().toISOString()
+            });
+
+            await db.ref('sucursales/' + sucursalActualId).update({
+                pendienteCobro: 0,
+                costoAdquisicionPendiente: 0,
+                cobrado: (s.cobrado || 0) + monto
+            });
+
+            mostrarNotif('✅ Cobro confirmado', 'success');
+        }
+
+        let sucursalAnalisisCache = { ordenado: [], itemsStock: [] };
+
+        async function cargarAnalisisSucursal(sucursalId) {
+            const snap = await db.ref(`sucursales/${sucursalId}/ventasReportadas`).once('value');
+            const data = snap.val();
+            const reportes = data ? Object.values(data) : [];
+            const totalesPorProducto = {};
+            reportes.forEach(r => {
+                (r.items || []).forEach(it => {
+                    totalesPorProducto[it.nombre] = (totalesPorProducto[it.nombre] || 0) + it.cantidad;
+                });
+            });
+            const ordenado = Object.entries(totalesPorProducto).sort((a, b) => b[1] - a[1]);
+            const itemsStock = Object.entries(sucursalActualStock).filter(([pid, cant]) => cant > 0);
+            sucursalAnalisisCache = { ordenado, itemsStock };
+
+            const htmlMasVendidos = ordenado.length === 0
+                ? '<p style="font-size:12px; color:#adb5bd;">Sin ventas reportadas todavía.</p>'
+                : ordenado.slice(0, 10).map(([nombre, cant], i) => `<div style="display:flex; justify-content:space-between; font-size:13px; padding:3px 0;"><span>${i + 1}. ${nombre}</span><span style="font-weight:700;">${cant}</span></div>`).join('');
+
+            const htmlTodoVendido = ordenado.length === 0
+                ? '<p style="font-size:12px; color:#adb5bd;">Sin ventas reportadas todavía.</p>'
+                : ordenado.map(([nombre, cant]) => `<div style="display:flex; justify-content:space-between; font-size:13px; padding:3px 0; border-bottom:1px solid #f1f3f5;"><span>${nombre}</span><span style="font-weight:700;">${cant}</span></div>`).join('');
+
+            const htmlLoQueTiene = itemsStock.length === 0
+                ? '<p style="font-size:12px; color:#adb5bd;">No tiene nada en existencia.</p>'
+                : itemsStock.map(([pid, cant]) => {
+                    const p = productos.find(x => x.id === pid);
+                    return `<div style="display:flex; justify-content:space-between; font-size:13px; padding:3px 0; border-bottom:1px solid #f1f3f5;"><span>${p ? p.nombre : '(eliminado)'}</span><span style="font-weight:700;">${cant}</span></div>`;
+                }).join('');
+
+            const elem = document.getElementById('sucursal-analisis-contenido');
+            if (elem) {
+                elem.innerHTML = `
+                    ${seccionDesplegable('sucursal-mas-vendidos', '🔥 Más vendidos', 'Top 10', htmlMasVendidos)}
+                    ${seccionDesplegable('sucursal-todo-vendido', '📃 Todo lo que ha vendido', ordenado.length + ' producto' + (ordenado.length === 1 ? '' : 's') + ' distintos', htmlTodoVendido)}
+                    ${seccionDesplegable('sucursal-lo-que-tiene', '📦 Lo que tiene actualmente', itemsStock.length + ' producto' + (itemsStock.length === 1 ? '' : 's') + ' en existencia', htmlLoQueTiene)}
+                    <button class="btn" style="width:100%; background:#17a2b8; color:white; margin-top:10px;" onclick="generarPDFAnalisisSucursal()">🖨️ Descargar PDF de este análisis</button>
+                `;
+            }
+        }
+
+        let sucursalHistorialEnviosCache = [];
+
+        async function cargarHistorialEnviosSucursal(sucursalId) {
+            const snap = await db.ref(`sucursales/${sucursalId}/envios`).once('value');
+            const data = snap.val();
+            sucursalHistorialEnviosCache = data ? Object.keys(data).map(k => ({ id: k, ...data[k] })).reverse() : [];
+            renderHistorialEnviosSucursal();
+        }
+
+        function renderHistorialEnviosSucursal() {
+            const cont = document.getElementById('sucursal-historial-envios-lista');
+            if (!cont) return;
+            if (sucursalHistorialEnviosCache.length === 0) {
+                cont.innerHTML = '<p style="font-size:12px; color:#adb5bd;">Sin envíos todavía.</p>';
+                return;
+            }
+            cont.innerHTML = sucursalHistorialEnviosCache.map(e => `
+                <div style="border-bottom:1px solid #f1f3f5;">
+                    <div style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; padding:8px 0;" onclick="toggleEnvioHistorial('${e.id}')">
+                        <div style="font-size:13px; font-weight:700; color:#0a6668;">${new Date(e.fecha).toLocaleDateString('es-MX')} ${e.costoEnvio > 0 ? `<span style="color:#dc3545; font-weight:600; font-size:11px;">· envío $${e.costoEnvio.toFixed(2)}</span>` : ''}</div>
+                        <span id="envio-chevron-${e.id}" style="font-size:13px; color:#6c757d; transition:transform 0.2s;">▼</span>
+                    </div>
+                    <div id="envio-detalle-${e.id}" style="display:none; padding:4px 0 10px 8px;">
+                        ${(e.items || []).map(it => `<div style="font-size:12.5px; color:#495057; padding:2px 0;">• ${it.cantidad}x ${it.nombre}</div>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleEnvioHistorial(id) {
+            const detalle = document.getElementById('envio-detalle-' + id);
+            const chevron = document.getElementById('envio-chevron-' + id);
+            const abierto = detalle.style.display === 'block';
+            detalle.style.display = abierto ? 'none' : 'block';
+            chevron.style.transform = abierto ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
+
+        async function eliminarSucursal() {
+            const s = sucursalesCache.find(x => x.id === sucursalActualId);
+            if (!s) return;
+
+            const stockItems = Object.entries(sucursalActualStock).filter(([pid, cant]) => cant > 0);
+            const tieneStock = stockItems.length > 0;
+            const tienePendiente = (s.pendienteCobro || 0) > 0;
+
+            let mensaje = `¿Eliminar la sucursal "${s.nombre}"? Esto no se puede deshacer.`;
+            if (tienePendiente || tieneStock) {
+                mensaje += '\n\n⚠️ Todavía tiene:';
+                if (tienePendiente) mensaje += `\n• $${s.pendienteCobro.toFixed(2)} pendientes de cobro`;
+                if (tieneStock) {
+                    const detalle = stockItems.map(([pid, cant]) => {
+                        const p = productos.find(x => x.id === pid);
+                        return `${cant}x ${p ? p.nombre : '(producto eliminado)'}`;
+                    }).join(', ');
+                    mensaje += `\n• Stock sin vender: ${detalle}`;
+                }
+                mensaje += '\n\nSi la eliminas, esta información se perderá para siempre.';
+            }
+
+            if (!confirm(mensaje)) return;
+
+            await db.ref('sucursales/' + sucursalActualId).remove();
+            document.getElementById('modal-detalle-sucursal').classList.remove('show');
+            mostrarNotif('🗑️ Sucursal eliminada', 'success');
+        }
+
+        // ===== Fiado =====
+        let fiadoCreditosCache = [];
+        let creditoSeleccionProductos = {};
+        let fiadoPersonaActualNombre = null;
+        const DIAS_AVISO_FIADO = 15;
+
+        function mostrarVistaFiado() {
+            document.getElementById('filtros-wrap').style.display = 'none';
+            document.getElementById('productos').style.display = 'none';
+            ocultarTodasLasVistas();
+            document.getElementById('vista-fiado').style.display = 'block';
+            mostrarBarraVolverCatalogo('vista-fiado');
+            cargarFiado();
+        }
+
+        function cargarFiado() {
+            db.ref('fiadoCreditos').on('value', snap => {
+                const data = snap.val();
+                fiadoCreditosCache = data ? Object.keys(data).map(k => ({ id: k, ...data[k] })) : [];
+                renderListaFiado();
+                actualizarBadgeFiado();
+                if (fiadoPersonaActualNombre && document.getElementById('modal-detalle-fiado').classList.contains('show')) {
+                    renderDetalleFiadoPersona();
+                }
+            });
+        }
+
+        function agruparCreditosPorPersona() {
+            const grupos = {};
+            fiadoCreditosCache.forEach(c => {
+                if (!grupos[c.personaNombre]) grupos[c.personaNombre] = [];
+                grupos[c.personaNombre].push(c);
+            });
+            return grupos;
+        }
+
+        function renderListaFiado() {
+            const grupos = agruparCreditosPorPersona();
+            const nombres = Object.keys(grupos).sort();
+            const cont = document.getElementById('lista-fiado');
+            if (nombres.length === 0) {
+                cont.innerHTML = `<div style="text-align:center; padding:40px 20px; background:white; border-radius:15px;"><div style="font-size:60px;">💳</div><h3 style="color:#6c757d; margin-top:10px;">Todavía no le has fiado a nadie</h3></div>`;
+                return;
+            }
+            cont.innerHTML = nombres.map(nombre => {
+                const creditos = grupos[nombre];
+                const activos = creditos.filter(c => !c.pagado && !c.cancelado);
+                const debe = activos.reduce((s, c) => s + c.monto, 0);
+                const masViejo = activos.slice().sort((a, b) => new Date(a.fecha) - new Date(b.fecha))[0];
+                const dias = masViejo ? diasDesde(masViejo.fecha) : null;
+                const avisoActivo = dias !== null && dias >= DIAS_AVISO_FIADO;
+                const avisosHist = creditos.reduce((s, c) => s + (c.avisosAlResolver || 0), 0);
+                return `
+                <div class="pedido-card" style="cursor:pointer; border-left-color:${avisoActivo ? '#dc3545' : '#6f4e37'};" onclick="abrirDetalleFiadoPersona('${encodeURIComponent(nombre)}')">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                        <div>
+                            <strong style="font-size:16px;">👤 ${nombre}</strong> ${avisoActivo ? `<span style="color:#dc3545; font-size:12px; font-weight:800;">⚠️ ${dias} días sin pagar</span>` : ''}
+                            <div style="font-size:12px; color:#6c757d;">${creditos.length} crédito${creditos.length === 1 ? '' : 's'} histórico${creditos.length === 1 ? '' : 's'} · ${avisosHist} aviso${avisosHist === 1 ? '' : 's'} de retraso</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:12px; color:#6c757d;">Debe ahora</div>
+                            <div style="font-size:16px; font-weight:900; color:${debe > 0 ? '#dc3545' : '#28a745'};">$${debe.toFixed(2)}</div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function actualizarBadgeFiado() {
+            const grupos = agruparCreditosPorPersona();
+            const alguno = Object.values(grupos).some(creditos => {
+                const activos = creditos.filter(c => !c.pagado && !c.cancelado);
+                if (activos.length === 0) return false;
+                const masViejo = activos.slice().sort((a, b) => new Date(a.fecha) - new Date(b.fecha))[0];
+                const dias = diasDesde(masViejo.fecha);
+                return dias !== null && dias >= DIAS_AVISO_FIADO;
+            });
+            document.getElementById('fiado-badge').style.display = alguno ? 'inline-block' : 'none';
+            actualizarBadgeHerramientas();
+        }
+
+        function abrirModalNuevoCredito() {
+            document.getElementById('credito-nombre-persona').value = '';
+            document.getElementById('credito-tipo-precio').value = 'mayoreo';
+            document.getElementById('credito-buscador-producto').value = '';
+            creditoSeleccionProductos = {};
+            renderListaProductosCredito();
+            document.getElementById('modal-nuevo-credito').classList.add('show');
+        }
+
+        function cerrarModalNuevoCredito() {
+            document.getElementById('modal-nuevo-credito').classList.remove('show');
+        }
+
+        function renderListaProductosCredito() {
+            const q = document.getElementById('credito-buscador-producto').value.trim().toLowerCase();
+            const filtrados = q ? productos.filter(p => p.nombre.toLowerCase().includes(q)) : productos;
+            document.getElementById('credito-lista-productos').innerHTML = filtrados.slice(0, 60).map(p => `
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid #f1f3f5;">
+                    <span style="font-size:12.5px; flex:1;">${p.nombre}</span>
+                    <input type="number" min="0" value="${creditoSeleccionProductos[p.id] || 0}" style="width:55px; padding:4px; border-radius:6px; border:1.5px solid #e9ecef;" onchange="actualizarCantidadCredito('${p.id}', this.value)">
+                </div>
+            `).join('');
+            actualizarPreviewCredito();
+        }
+
+        function actualizarCantidadCredito(pid, val) {
+            creditoSeleccionProductos[pid] = parseInt(val) || 0;
+            actualizarPreviewCredito();
+        }
+
+        function actualizarPreviewCredito() {
+            const tipoPrecio = document.getElementById('credito-tipo-precio').value;
+            let total = 0;
+            Object.entries(creditoSeleccionProductos).forEach(([pid, cant]) => {
+                if (cant <= 0) return;
+                const p = productos.find(x => x.id === pid);
+                if (!p) return;
+                total += (tipoPrecio === 'mayoreo' ? p.precioMayoreo : p.precioPublico) * cant;
+            });
+            document.getElementById('credito-total-preview').textContent = total > 0 ? `Total del crédito: $${total.toFixed(2)}` : '';
+        }
+
+        async function guardarNuevoCredito() {
+            const nombre = document.getElementById('credito-nombre-persona').value.trim();
+            const tipoPrecio = document.getElementById('credito-tipo-precio').value;
+            if (!nombre) { alert('Escribe el nombre de la persona.'); return; }
+            const items = Object.entries(creditoSeleccionProductos).filter(([id, cant]) => cant > 0);
+            if (items.length === 0) { alert('Selecciona al menos un producto.'); return; }
+
+            const detalleItems = [];
+            let total = 0;
+
+            for (const [pid, cant] of items) {
+                const p = productos.find(x => x.id === pid);
+                if (!p) continue;
+                const precioUnit = tipoPrecio === 'mayoreo' ? p.precioMayoreo : p.precioPublico;
+                detalleItems.push({ productoId: pid, nombre: p.nombre, cantidad: cant, precioUnitario: precioUnit, precioAdquisicion: p.precioAdquisicion });
+                total += precioUnit * cant;
+
+                if (p.cantidadStock !== null && p.cantidadStock !== undefined) {
+                    const nuevoStock = Math.max(0, p.cantidadStock - cant);
+                    await db.ref('productos/' + pid).update({ cantidadStock: nuevoStock, enStock: nuevoStock > 0 });
+                }
+            }
+
+            await db.ref('fiadoCreditos').push({
+                personaNombre: nombre, fecha: new Date().toISOString(), items: detalleItems,
+                tipoPrecio, monto: total, pagado: false, cancelado: false
+            });
+
+            mostrarNotif(`💳 Crédito registrado — $${total.toFixed(2)}`, 'success');
+            cerrarModalNuevoCredito();
+        }
+
+        function abrirDetalleFiadoPersona(nombreEncoded) {
+            fiadoPersonaActualNombre = decodeURIComponent(nombreEncoded);
+            document.getElementById('detalle-fiado-titulo').textContent = '👤 ' + fiadoPersonaActualNombre;
+            document.getElementById('modal-detalle-fiado').classList.add('show');
+            renderDetalleFiadoPersona();
+        }
+
+        function renderDetalleFiadoPersona() {
+            const creditos = fiadoCreditosCache.filter(c => c.personaNombre === fiadoPersonaActualNombre).slice().sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+            const activos = creditos.filter(c => !c.pagado && !c.cancelado);
+            const debe = activos.reduce((s, c) => s + c.monto, 0);
+
+            document.getElementById('detalle-fiado-contenido').innerHTML = `
+                <div style="background:#f8f9fa; border-radius:10px; padding:14px; margin-bottom:16px;">
+                    <div style="font-size:11px; color:#6c757d; font-weight:700;">DEBE AHORA</div>
+                    <div style="font-size:22px; font-weight:900; color:${debe > 0 ? '#dc3545' : '#28a745'};">$${debe.toFixed(2)}</div>
+                </div>
+                <div style="font-size:13px; font-weight:800; color:#1a365d; margin-bottom:10px;">Historial de créditos</div>
+                ${creditos.map(c => `
+                    <div style="border:1.5px solid #f1f3f5; border-radius:10px; padding:12px; margin-bottom:10px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                            <div>
+                                <div style="font-size:12px; color:#6c757d;">${new Date(c.fecha).toLocaleDateString('es-MX')} · ${c.tipoPrecio === 'mayoreo' ? 'Precio Mayoreo' : 'Precio Público'}</div>
+                                <div style="font-size:13px;">${(c.items || []).map(it => `${it.cantidad}x ${it.nombre}`).join(', ')}</div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-weight:800;">$${c.monto.toFixed(2)}</div>
+                                <div style="font-size:11px; font-weight:700; color:${c.pagado ? '#28a745' : c.cancelado ? '#6c757d' : '#dc3545'};">${c.pagado ? '✅ Pagado' : c.cancelado ? '🚫 Cancelado' : '⏳ Pendiente'}</div>
+                            </div>
+                        </div>
+                        ${(!c.pagado && !c.cancelado) ? `
+                        <div style="display:flex; gap:8px; margin-top:10px;">
+                            <button class="btn" style="flex:1; background:#28a745; color:white; font-size:12px; padding:8px;" onclick="confirmarPagoCredito('${c.id}')">✅ Confirmar pago</button>
+                            <button class="btn" style="flex:1; background:white; color:#dc3545; border:1.5px solid #dc3545; font-size:12px; padding:8px;" onclick="cancelarCredito('${c.id}')">🚫 Cancelar deuda</button>
+                        </div>` : ''}
+                    </div>
+                `).join('')}
+
+                <button class="btn" style="width:100%; background:white; color:#dc3545; border:2px solid #dc3545; margin-top:16px;" onclick="eliminarPersonaFiado()">🗑️ Eliminar persona</button>
+            `;
+        }
+
+        async function eliminarPersonaFiado() {
+            const creditos = fiadoCreditosCache.filter(c => c.personaNombre === fiadoPersonaActualNombre);
+            const activos = creditos.filter(c => !c.pagado && !c.cancelado);
+            const debe = activos.reduce((s, c) => s + c.monto, 0);
+
+            let mensaje = `¿Eliminar a "${fiadoPersonaActualNombre}" y todo su historial de créditos? Esto no se puede deshacer.`;
+            if (debe > 0) {
+                mensaje += `\n\n⚠️ Todavía te debe $${debe.toFixed(2)} sin cobrar.\n\nSi la eliminas, esta deuda se perderá de tus registros.`;
+            }
+
+            if (!confirm(mensaje)) return;
+
+            const actualizaciones = {};
+            creditos.forEach(c => { actualizaciones['fiadoCreditos/' + c.id] = null; });
+            await db.ref().update(actualizaciones);
+
+            document.getElementById('modal-detalle-fiado').classList.remove('show');
+            mostrarNotif('🗑️ Persona eliminada', 'success');
+        }
+
+        async function confirmarPagoCredito(creditoId) {
+            const c = fiadoCreditosCache.find(x => x.id === creditoId);
+            if (!c) return;
+            if (!confirm(`¿Confirmas que ${c.personaNombre} pagó $${c.monto.toFixed(2)}?`)) return;
+
+            const dias = diasDesde(c.fecha);
+            const avisos = dias !== null ? Math.floor(dias / DIAS_AVISO_FIADO) : 0;
+
+            await db.ref('fiadoCreditos/' + creditoId).update({ pagado: true, fechaPago: new Date().toISOString(), avisosAlResolver: avisos });
+
+            const costoTotal = (c.items || []).reduce((s, it) => s + ((it.precioAdquisicion || 0) * it.cantidad), 0);
+
+            await db.ref('ventas').push({
+                pedidoId: null, numeroOrden: null,
+                clienteNombre: c.personaNombre, clienteTelefono: null,
+                origen: 'fiado', items: c.items,
+                total: c.monto, ganancia: c.monto - costoTotal,
+                metodoPago: 'efectivo', fecha: new Date().toISOString()
+            });
+
+            mostrarNotif('✅ Pago confirmado', 'success');
+        }
+
+        async function cancelarCredito(creditoId) {
+            if (!confirm('¿Cancelar esta deuda? Se marcará como pérdida, ya no contará como pendiente.')) return;
+            await db.ref('fiadoCreditos/' + creditoId).update({ cancelado: true, fechaCancelado: new Date().toISOString() });
+            mostrarNotif('🚫 Deuda cancelada', 'success');
         }
 
         function cargarClientesLista() {
