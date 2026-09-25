@@ -466,8 +466,9 @@
                     <button class="btn-carrito" onclick="abrirModalCoaching()" style="background: linear-gradient(135deg, #c2530a, #ff9800); color: white;">
                         💪 Coaching
                     </button>
-                    <button class="btn-carrito" id="btn-sorteos" onclick="abrirModalSorteos()" style="background: linear-gradient(135deg, #e83e8c, #6f42c1); color: white;">
+                    <button class="btn-carrito" id="btn-sorteos" onclick="abrirModalSorteos()" style="background: linear-gradient(135deg, #e83e8c, #6f42c1); color: white; position:relative;">
                         🎟️ Sorteos
+                        <span id="sorteos-ig-badge" style="display:none; position:absolute; top:-4px; right:-4px; background:#ffc107; color:#1a365d; border-radius:999px; width:16px; height:16px; font-size:10px; font-weight:900; align-items:center; justify-content:center; border:2px solid white;">!</span>
                     </button>
                     <button class="btn-carrito" id="btn-vip" onclick="abrirModalVIP()" style="display:none; background: linear-gradient(135deg, #ffc107, #ff9800); color: #1a365d;">
                         👑 VIP Zone
@@ -740,7 +741,7 @@
             </div>
 
             <div id="sorteos-confirmar-wrap" style="display:none; background:#fff3e0; border:1.5px solid #ff9800; border-radius:10px; padding:14px; margin-bottom:16px;">
-                <p id="sorteos-confirmar-texto" style="font-size:13px; margin-bottom:8px;">¿Ya nos sigues en Instagram? Sube una captura de pantalla que lo muestre para confirmar tu participación:</p>
+                <p id="sorteos-confirmar-texto" style="font-size:13px; margin-bottom:8px;">Para que tus compras te generen boletos y puedas participar en el Sorteo Mensual, primero necesitamos confirmar que nos sigues en Instagram. Sube una captura de pantalla que lo muestre:</p>
                 <input type="text" id="sorteos-usuario-ig" class="buscador" placeholder="@tu_usuario" style="margin-bottom:8px;">
                 <label style="display:block; font-size: 12px; font-weight:700; margin-bottom:4px;">Captura de pantalla</label>
                 <input type="file" accept="image/*" id="sorteos-captura-input" onchange="previsualizarCapturaSorteo(event)" style="margin-bottom:8px;">
@@ -750,10 +751,12 @@
 
             <div id="sorteos-pendiente-wrap" style="display:none; background:#f8f9fa; border-radius:10px; padding:14px; text-align:center;">
                 <p style="font-size:13px; margin:0;">⏳ Tu solicitud está en revisión. Te avisaremos en cuanto la aprobemos.</p>
+                <p style="font-size:11.5px; color:#6c757d; margin:8px 0 0;">En cuanto se apruebe, todas las compras que ya llevas acumuladas en este ciclo te generarán su boleto automáticamente — no pierdes nada por haber comprado antes de confirmar.</p>
             </div>
 
-            <div id="sorteos-boletos-wrap" style="display:none; background:#e6f9ee; border-radius:10px; padding:14px; text-align:center;">
-                <p style="font-size:14px; margin:0;">🎟️ Llevas <strong id="sorteos-mis-boletos">0</strong> boleto(s) en este ciclo</p>
+            <div id="sorteos-boletos-wrap" style="display:none; background:#e6f9ee; border-radius:10px; padding:14px;">
+                <p style="font-size:14px; margin:0 0 10px; text-align:center;">🎟️ Llevas <strong id="sorteos-mis-boletos">0</strong> boleto(s) en este ciclo</p>
+                <div id="sorteos-lista-boletos" style="max-height:180px; overflow-y:auto;"></div>
             </div>
 
             <div id="sorteos-necesita-cuenta-wrap" style="display:none; background:#f8f9fa; border-radius:10px; padding:14px; text-align:center;">
@@ -4123,8 +4126,20 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 boletosWrap.style.display = 'block';
                 db.ref('sorteoBoletos').once('value').then(snapshot => {
                     const data = snapshot.val();
-                    const misBoletos = data ? Object.values(data).filter(b => b.clienteTelefono === clienteActual.telefono).length : 0;
-                    document.getElementById('sorteos-mis-boletos').textContent = misBoletos;
+                    const misBoletos = data
+                        ? Object.keys(data)
+                            .filter(num => data[num].clienteTelefono === clienteActual.telefono)
+                            .map(num => ({ numero: num, ...data[num] }))
+                            .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
+                        : [];
+                    document.getElementById('sorteos-mis-boletos').textContent = misBoletos.length;
+                    document.getElementById('sorteos-lista-boletos').innerHTML = misBoletos.length === 0 ? '' : misBoletos.map(b => `
+                        <div style="display:flex; justify-content:space-between; align-items:center; background:white; border-radius:8px; padding:8px 10px; margin-bottom:6px; font-size:12.5px;">
+                            <span style="font-weight:800; color:#28a745;">#${b.numero}</span>
+                            <span style="color:#495057;">${b.folio ? 'Compra ' + b.folio : 'Compra'}</span>
+                            <span style="color:#adb5bd; font-size:11px;">${new Date(b.fecha).toLocaleDateString('es-MX')}</span>
+                        </div>
+                    `).join('');
                 });
             } else if (clienteActual.instagramEstadoConfirmacion === 'pendiente') {
                 pendienteWrap.style.display = 'block';
@@ -4132,6 +4147,9 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 if (clienteActual.instagramEstadoConfirmacion === 'rechazada') {
                     document.getElementById('sorteos-confirmar-texto').textContent = 'Tu solicitud anterior no pudo aprobarse. Sube una nueva captura que muestre claramente que nos sigues:';
                 }
+                sorteoCapturaBase64Temp = null;
+                document.getElementById('sorteos-captura-preview').innerHTML = '';
+                document.getElementById('sorteos-captura-input').value = '';
                 confirmarWrap.style.display = 'block';
             }
 
@@ -4630,6 +4648,12 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             const vistaPerfil = document.getElementById('cuenta-vista-perfil');
             const bannerRegistro = document.getElementById('banner-registro');
             const btnVip = document.getElementById('btn-vip');
+
+            const badgeIG = document.getElementById('sorteos-ig-badge');
+            if (badgeIG) {
+                const necesitaConfirmarIG = clienteActual && !clienteActual.instagramConfirmado;
+                badgeIG.style.display = necesitaConfirmarIG ? 'flex' : 'none';
+            }
 
             if (clienteActual) {
                 const primerNombre = clienteActual.nombre.split(' ')[0];
