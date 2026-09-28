@@ -5946,6 +5946,67 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             lector.readAsDataURL(archivo);
         }
 
+        // ===== Arrastrar para reordenar (Transformaciones y Testimonios) =====
+        // Funciona igual con el dedo (celular) que con el mouse (computadora): cada tarjeta
+        // trae un "tirador" (el icono ⠿⠿); al soltar, se guarda el orden final completo.
+        function habilitarArrastre(contenedorId, coleccion, esGrid) {
+            const cont = document.getElementById(contenedorId);
+            if (!cont || cont.dataset.arrastreListo) return;
+            cont.dataset.arrastreListo = '1';
+            let el = null, pid = null;
+
+            function agarrar(e) {
+                const manija = e.target.closest('[data-arrastrable]');
+                if (!manija) return;
+                el = manija.closest('[data-id]');
+                if (!el) return;
+                pid = e.pointerId;
+                el.setPointerCapture(pid);
+                el.style.opacity = '0.5';
+                el.style.zIndex = '10';
+                e.preventDefault();
+            }
+
+            function mover(e) {
+                if (!el || e.pointerId !== pid) return;
+                e.preventDefault();
+                const x = e.clientX, y = e.clientY;
+                const hermanos = [...cont.children].filter(c => c !== el);
+                let destino = null;
+                for (const h of hermanos) {
+                    const r = h.getBoundingClientRect();
+                    if (esGrid) {
+                        if (y < r.top || y > r.bottom) continue;
+                        if (x < r.left + r.width / 2) { destino = h; break; }
+                    } else {
+                        if (y < r.top + r.height / 2) { destino = h; break; }
+                    }
+                }
+                if (destino) cont.insertBefore(el, destino);
+                else cont.appendChild(el);
+            }
+
+            function soltar(e) {
+                if (!el || e.pointerId !== pid) return;
+                el.style.opacity = '';
+                el.style.zIndex = '';
+                const idsEnOrden = [...cont.children].map(c => c.dataset.id);
+                el = null; pid = null;
+                guardarNuevoOrdenCoaching(coleccion, idsEnOrden);
+            }
+
+            cont.addEventListener('pointerdown', agarrar);
+            cont.addEventListener('pointermove', mover);
+            cont.addEventListener('pointerup', soltar);
+            cont.addEventListener('pointercancel', soltar);
+        }
+
+        async function guardarNuevoOrdenCoaching(coleccion, idsEnOrden) {
+            const actualizaciones = {};
+            idsEnOrden.forEach((id, i) => { actualizaciones[id + '/orden'] = i; });
+            await db.ref(coleccion).update(actualizaciones);
+        }
+
         let transformacionesSiguienteOrden = 0;
 
         // Los registros de antes de esta actualización no tienen "orden" (y guardaban solo el
@@ -5980,30 +6041,14 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             await migrarOrdenTransformaciones(data);
             const items = Object.keys(data).map(id => ({ id, ...data[id] })).sort((a, b) => a.orden - b.orden);
             transformacionesSiguienteOrden = items.length ? items[items.length - 1].orden + 1 : 0;
-            cont.innerHTML = items.map((it, i) => `
-                <div style="position:relative;">
-                    <img src="${it.img}" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px;">
+            cont.innerHTML = items.map(it => `
+                <div data-id="${it.id}" style="position:relative;">
+                    <img src="${it.img}" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px; pointer-events:none;">
                     <button onclick="eliminarTransformacion('${it.id}')" style="position:absolute; top:4px; right:4px; background:#dc3545; color:white; border:none; border-radius:50%; width:22px; height:22px; font-size:12px; cursor:pointer;">✕</button>
-                    <div style="position:absolute; bottom:4px; left:4px; display:flex; gap:3px;">
-                        <button onclick="moverTransformacion('${it.id}', -1)" ${i === 0 ? 'disabled' : ''} style="background:rgba(0,0,0,0.6); color:white; border:none; border-radius:6px; width:22px; height:22px; font-size:12px; cursor:pointer; opacity:${i === 0 ? '0.35' : '1'};">◀</button>
-                        <button onclick="moverTransformacion('${it.id}', 1)" ${i === items.length - 1 ? 'disabled' : ''} style="background:rgba(0,0,0,0.6); color:white; border:none; border-radius:6px; width:22px; height:22px; font-size:12px; cursor:pointer; opacity:${i === items.length - 1 ? '0.35' : '1'};">▶</button>
-                    </div>
+                    <div data-arrastrable style="position:absolute; bottom:4px; left:4px; background:rgba(0,0,0,0.6); color:white; border-radius:6px; width:26px; height:22px; display:flex; align-items:center; justify-content:center; font-size:14px; cursor:grab; touch-action:none;">⠿</div>
                 </div>
             `).join('');
-        }
-
-        async function moverTransformacion(id, direccion) {
-            const snapshot = await db.ref('coachingTransformaciones').once('value');
-            const data = snapshot.val();
-            const items = Object.keys(data).map(k => ({ id: k, ...data[k] })).sort((a, b) => a.orden - b.orden);
-            const i = items.findIndex(x => x.id === id);
-            const j = i + direccion;
-            if (i < 0 || j < 0 || j >= items.length) return;
-            await db.ref('coachingTransformaciones').update({
-                [items[i].id + '/orden']: items[j].orden,
-                [items[j].id + '/orden']: items[i].orden
-            });
-            cargarTransformaciones();
+            habilitarArrastre('lista-transformaciones', 'coachingTransformaciones', true);
         }
 
         function eliminarTransformacion(id) {
@@ -6150,39 +6195,21 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             await migrarOrdenTestimonios(data);
             const items = Object.keys(data).map(id => ({ id, ...data[id] })).sort((a, b) => a.orden - b.orden);
             testimoniosSiguienteOrden = items.length ? items[items.length - 1].orden + 1 : 0;
-            cont.innerHTML = items.map((it, i) => `
-                <div style="background:#f8f9fa; border-radius:10px; padding:12px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:start; gap:10px;">
+            cont.innerHTML = items.map(it => `
+                <div data-id="${it.id}" style="background:#f8f9fa; border-radius:10px; padding:12px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:start; gap:10px;">
                     <div style="display:flex; gap:10px; align-items:start;">
-                        ${it.fotoBase64 ? `<img src="${it.fotoBase64}" style="width:44px; height:44px; object-fit:cover; border-radius:8px; flex-shrink:0;">` : ''}
+                        <div data-arrastrable style="background:#e9ecef; color:#495057; border-radius:6px; width:26px; height:26px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:15px; cursor:grab; touch-action:none;">⠿</div>
+                        ${it.fotoBase64 ? `<img src="${it.fotoBase64}" style="width:44px; height:44px; object-fit:cover; border-radius:8px; flex-shrink:0; pointer-events:none;">` : ''}
                         <div>
                             ${it.video ? `<span style="font-size:10.5px; font-weight:800; color:#dc3545; background:#fde8ea; border-radius:6px; padding:2px 6px;">🎬 ${it.video.plataforma === 'youtube' ? 'YouTube' : 'Instagram'}</span>` : ''}
                             ${it.texto ? `<p style="font-size:13px; font-style:italic; margin-bottom:6px;">"${it.texto}"</p>` : '<p style="font-size:12px; color:#adb5bd; margin-bottom:6px;">(sin texto)</p>'}
                             <p style="font-size:12px; font-weight:700; color:#6c757d; margin:0;">${it.nombre ? '— ' + it.nombre : '(sin nombre)'}</p>
                         </div>
                     </div>
-                    <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-end; flex-shrink:0;">
-                        <button onclick="eliminarTestimonio('${it.id}')" style="background:white; color:#dc3545; border:1.5px solid #dc3545; border-radius:6px; font-size:11px; padding:4px 8px; cursor:pointer;">Eliminar</button>
-                        <div style="display:flex; gap:3px;">
-                            <button onclick="moverTestimonio('${it.id}', -1)" ${i === 0 ? 'disabled' : ''} style="background:#e9ecef; color:#495057; border:none; border-radius:6px; width:24px; height:24px; font-size:12px; cursor:pointer; opacity:${i === 0 ? '0.4' : '1'};">▲</button>
-                            <button onclick="moverTestimonio('${it.id}', 1)" ${i === items.length - 1 ? 'disabled' : ''} style="background:#e9ecef; color:#495057; border:none; border-radius:6px; width:24px; height:24px; font-size:12px; cursor:pointer; opacity:${i === items.length - 1 ? '0.4' : '1'};">▼</button>
-                        </div>
-                    </div>
+                    <button onclick="eliminarTestimonio('${it.id}')" style="background:white; color:#dc3545; border:1.5px solid #dc3545; border-radius:6px; font-size:11px; padding:4px 8px; cursor:pointer; flex-shrink:0;">Eliminar</button>
                 </div>
             `).join('');
-        }
-
-        async function moverTestimonio(id, direccion) {
-            const snapshot = await db.ref('coachingTestimonios').once('value');
-            const data = snapshot.val();
-            const items = Object.keys(data).map(k => ({ id: k, ...data[k] })).sort((a, b) => a.orden - b.orden);
-            const i = items.findIndex(x => x.id === id);
-            const j = i + direccion;
-            if (i < 0 || j < 0 || j >= items.length) return;
-            await db.ref('coachingTestimonios').update({
-                [items[i].id + '/orden']: items[j].orden,
-                [items[j].id + '/orden']: items[i].orden
-            });
-            cargarTestimonios();
+            habilitarArrastre('lista-testimonios', 'coachingTestimonios', false);
         }
 
         let todosLosClientesLista = [];
