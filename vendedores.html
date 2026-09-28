@@ -543,6 +543,9 @@
                             <button class="btn" style="background: #343a40; color: white;" onclick="mostrarVistaCodigosBarras()">
                                 <span class="icono-circulo">🏷️</span> Códigos de barras <span id="codigos-barras-pendientes-count" style="display:none; background:#dc3545; border-radius:10px; padding:1px 7px; font-size:11px; margin-left:4px;">0</span>
                             </button>
+                            <button class="btn" style="background: #b45f00; color: white;" onclick="mostrarVistaCaducidades()">
+                                <span class="icono-circulo">⏳</span> Caducidades <span id="caducidades-count" style="display:none; background:#dc3545; border-radius:10px; padding:1px 7px; font-size:11px; margin-left:4px;">0</span>
+                            </button>
                             <button class="btn" style="background: #0a6668; color: white; position:relative;" onclick="mostrarVistaSucursales()">
                                 <span class="icono-circulo">🏪</span> Sucursales
                                 <span id="sucursales-badge" style="display:none; background:#dc3545; color:white; border-radius:999px; padding:2px 8px; font-size:11px; font-weight:900; margin-left:4px; animation: pulso-herramientas 1.4s ease-in-out infinite;">!</span>
@@ -903,6 +906,11 @@
                         <div id="finanzas-descuentos-otorgados" style="font-size:16px; font-weight:700; color:#e83e8c;">$0.00</div>
                         <div style="font-size:10px; color:#adb5bd;">Informativo — ya está incluido en tus ingresos, no se resta de nuevo</div>
                     </div>
+                    <div>
+                        <div style="font-size:12px; color:#6c757d; font-weight:700;">⏳ INVENTARIO EN RIESGO</div>
+                        <div id="finanzas-riesgo-caducidad" style="font-size:16px; font-weight:700; color:#b45f00;">$0.00</div>
+                        <div style="font-size:10px; color:#adb5bd;">Hoy, a costo: lo vencido o que caduca en 90 días. Lo que retires como caducado ya cae como gasto</div>
+                    </div>
                     </div>
                 </div>
 
@@ -1095,6 +1103,18 @@
                     </div>
                 </div>
                 <div id="lista-codigos-barras"></div>
+            </div>
+
+            <div id="vista-caducidades" style="display:none;">
+                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px; padding-top: 62px;">
+                </div>
+                <div class="card" style="background:white; border-radius:15px; padding:20px; margin-bottom:16px;">
+                    <p style="font-size:13px; color:#495057; margin-bottom:12px;">Control interno de fechas de caducidad — los clientes nunca lo ven. Avisa desde 90 días antes; a 60 y a 30 días el color sube de urgencia.</p>
+                    <div id="caducidades-resumen"></div>
+                    <button id="btn-caducidades-todos" class="btn" style="background:#e9ecef; color:#495057; font-size:12.5px; padding:8px 14px; margin-top:12px;" onclick="toggleCaducidadesTodos()">Ver todos los lotes con fecha</button>
+                </div>
+                <div id="caducidades-sin-fecha"></div>
+                <div id="lista-caducidades"></div>
             </div>
 
             <div id="vista-sucursales" style="display:none;">
@@ -1369,11 +1389,6 @@
                 </div>
                 <div id="grupo-alimentos" style="display:none;">
                     <div class="form-group">
-                        <label style="font-size: 12px;">Fecha de caducidad</label>
-                        <input type="date" id="fechaCaducidad" style="width:100%; padding:8px 10px; border-radius:8px; border:1.5px solid #e9ecef; font-size:13px;">
-                        <div style="font-size:11px; color:#6c757d; margin-top:4px;">Opcional.</div>
-                    </div>
-                    <div class="form-group">
                         <label style="font-weight: 400;"><input type="checkbox" id="requiereRefrigeracion"> ❄️ Requiere refrigeración</label>
                     </div>
                 </div>
@@ -1411,6 +1426,10 @@
                             <div id="stock-resumen-sabores" style="font-size:12px; font-weight:700; margin-top:8px;"></div>
                         </div>
                         <div id="stock-simple-wrap" style="margin-top:12px;">
+                        <div id="grupo-caducidad-simple" style="display:none; margin-bottom:10px;">
+                            <label style="font-size:12px; font-weight:600;">Fecha de caducidad (opcional, solo para ti)</label>
+                            <input type="date" id="fechaCaducidad" style="width:100%; padding:8px 10px; border-radius:8px; border:1.5px solid #e9ecef; font-size:13px; box-sizing:border-box;">
+                        </div>
                         <div style="font-size:11px; color:#6c757d; margin-bottom:6px;">— o, si no vas a registrar códigos por sabor —</div>
                         <label style="font-size:12px; font-weight:600;">Cantidad en inventario</label>
                         <input type="number" id="cantidadStock" min="0" step="1" placeholder="Ej: 12" style="width:100%; padding:8px 10px; border-radius:8px; border:1.5px solid #e9ecef; font-size:13px; box-sizing:border-box;" oninput="sincronizarEnStockConCantidad()">
@@ -1425,6 +1444,10 @@
                         <div id="fila-sabor-individual" style="display:none; margin-bottom:8px;">
                             <label style="font-size:12px; font-weight:600;">Sabor de los siguientes códigos que escanees</label>
                             <select id="sabor-codigos-siguientes" style="width:100%; padding:8px; border-radius:8px; border:1.5px solid #e9ecef; font-size:13px;"></select>
+                        </div>
+                        <div id="fila-fecha-individual" style="display:none; margin-bottom:8px;">
+                            <label style="font-size:12px; font-weight:600;">Caducidad de los siguientes códigos que escanee (opcional)</label>
+                            <input type="date" id="fecha-codigos-siguientes" style="width:100%; padding:8px; border-radius:8px; border:1.5px solid #e9ecef; font-size:13px; box-sizing:border-box;">
                         </div>
                         <div style="display:flex; gap:6px; margin-bottom:8px;">
                             <input type="text" id="codigo-individual-nuevo" placeholder="Escanea o escribe un código y da Enter" style="flex:1; padding:8px 10px; border-radius:8px; border:1.5px solid #e9ecef; font-size:13px; box-sizing:border-box;" onkeydown="if(event.key==='Enter'){event.preventDefault(); agregarCodigoIndividual();}">
@@ -2068,6 +2091,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             }
             ajustarAlturaHeaderSticky();
             actualizarBadgeCodigosBarras();
+            actualizarBadgeCaducidades();
             if (!masVendidosCalculados) {
                 masVendidosCalculados = true;
                 recalcularMasVendidosAuto();
@@ -2145,7 +2169,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         }
 
         function actualizarBadgeHerramientas() {
-            const ids = ['pedidos-pendientes-count', 'resenas-pendientes-count', 'cupones-agotandose-count', 'menciones-pendientes-count', 'distribuidores-pendientes-count', 'sorteo-pendientes-count', 'codigos-barras-pendientes-count', 'clientes-nuevos-count'];
+            const ids = ['pedidos-pendientes-count', 'resenas-pendientes-count', 'cupones-agotandose-count', 'menciones-pendientes-count', 'distribuidores-pendientes-count', 'sorteo-pendientes-count', 'codigos-barras-pendientes-count', 'clientes-nuevos-count', 'caducidades-count'];
             let total = 0;
             ids.forEach(id => {
                 const el = document.getElementById(id);
@@ -2221,6 +2245,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                                 ${p.esNuevo ? '<span class="tag nuevo">✨ NUEVO</span>' : ''}
                                 ${esProductoMasVendido(p) ? '<span class="tag vendido">🔥 VENDIDO</span>' : ''}
                             </div>` : ''}
+                            ${etiquetaCaducidadProducto(p, true)}
                             ${(p.talla || p.color) ? `<p style="color: #6610f2; font-size: 10.5px; margin: 3px 0; font-weight:600;">${[p.talla ? 'T: ' + p.talla : '', p.color ? 'C: ' + p.color : ''].filter(Boolean).join(' · ')}</p>` : ''}
                             <div class="precios">
                                 <div><strong>Público:</strong> $${p.precioPublico.toFixed(2)}</div>
@@ -2253,7 +2278,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                         </div>` : ''}
                         ${p.sabores ? `<p style="color: #17a2b8; font-size: 13px; margin: 5px 0;">${saboresParaMostrar(p, true)}</p>` : ''}
                         ${(p.talla || p.color) ? `<p style="color: #6610f2; font-size: 13px; margin: 5px 0; font-weight:600;">${[p.talla ? 'Talla: ' + p.talla : '', p.color ? 'Color: ' + p.color : ''].filter(Boolean).join(' · ')}</p>` : ''}
-                        ${p.fechaCaducidad ? `<p style="color: #dc3545; font-size: 12px; margin: 5px 0; font-weight:600;">⏳ Caduca: ${p.fechaCaducidad}</p>` : ''}
+                        ${etiquetaCaducidadProducto(p, false)}
                         ${p.requiereRefrigeracion ? `<p style="color: #17a2b8; font-size: 12px; margin: 5px 0; font-weight:600;">❄️ Requiere refrigeración</p>` : ''}
                         <div class="precios">
                             <div><strong>Adquisición:</strong> $${p.precioAdquisicion.toFixed(2)}</div>
@@ -2375,6 +2400,8 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             const mostrarAlimentos = categoria === 'Alimentos';
             document.getElementById('grupo-talla-color').style.display = mostrarTallaColor ? 'block' : 'none';
             document.getElementById('grupo-alimentos').style.display = mostrarAlimentos ? 'block' : 'none';
+            document.getElementById('grupo-caducidad-simple').style.display = categoriaLlevaCaducidad(categoria) ? 'block' : 'none';
+            refrescarSaboresFormulario();
         }
 
         function sincronizarEnStockConCantidad() {
@@ -2433,6 +2460,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             const cont = document.getElementById('lista-renglones-stock');
             if (!cont) return;
             const hayLista = saboresDelFormulario().length > 0 || renglonesStockTemp.some(r => r.sabor);
+            const llevaFecha = categoriaLlevaCaducidad(document.getElementById('categoria').value);
             cont.innerHTML = renglonesStockTemp.map((r, i) => `
                 <div class="renglon-stock" style="background:white; border:1.5px solid #e9ecef; border-radius:8px; padding:8px; margin-bottom:6px;">
                     <div style="display:flex; gap:6px; align-items:center; margin-bottom:6px;">
@@ -2443,6 +2471,10 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                         ${hayLista ? `<select onchange="actualizarRenglonStock(${i}, 'sabor', this.value)" style="flex:1; min-width:0; padding:8px; border-radius:8px; border:1.5px solid #e9ecef; font-size:13px;">${opcionesSaborHtml(r.sabor)}</select>` : ''}
                         <input type="number" min="0" step="1" value="${r.cantidad}" oninput="actualizarRenglonStock(${i}, 'cantidad', this.value)" aria-label="Cantidad" placeholder="Cant." style="width:${hayLista ? '80px' : '100%'}; padding:8px 10px; border-radius:8px; border:1.5px solid #e9ecef; font-size:13px; box-sizing:border-box;">
                     </div>
+                    ${llevaFecha ? `<div style="display:flex; gap:6px; align-items:center; margin-top:6px;">
+                        <span style="font-size:11.5px; color:#6c757d; white-space:nowrap;">⏳ Caduca</span>
+                        <input type="date" value="${escaparAttr(r.caducidad || '')}" onchange="actualizarRenglonStock(${i}, 'caducidad', this.value)" aria-label="Fecha de caducidad" style="flex:1; min-width:0; padding:8px 10px; border-radius:8px; border:1.5px solid #e9ecef; font-size:13px; box-sizing:border-box;">
+                    </div>` : ''}
                 </div>
             `).join('');
             document.getElementById('stock-simple-wrap').style.display = renglonesStockTemp.length > 0 ? 'none' : 'block';
@@ -2455,12 +2487,13 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 const cod = document.getElementById('codigoBarras').value.trim();
                 const cantTxt = document.getElementById('cantidadStock').value;
                 if (cod || cantTxt !== '') {
-                    renglonesStockTemp.push({ codigo: cod, sabor: '', cantidad: parseInt(cantTxt, 10) || 0 });
+                    renglonesStockTemp.push({ codigo: cod, sabor: '', cantidad: parseInt(cantTxt, 10) || 0, caducidad: document.getElementById('fechaCaducidad').value || '' });
                     document.getElementById('codigoBarras').value = '';
                     document.getElementById('cantidadStock').value = '';
+                    document.getElementById('fechaCaducidad').value = '';
                 }
             }
-            renglonesStockTemp.push({ codigo: '', sabor: '', cantidad: 0 });
+            renglonesStockTemp.push({ codigo: '', sabor: '', cantidad: 0, caducidad: '' });
             renderRenglonesStock();
             const campos = document.querySelectorAll('#lista-renglones-stock input[type="text"]');
             if (campos.length) campos[campos.length - 1].focus();
@@ -2524,7 +2557,8 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 return;
             }
             const selector = document.getElementById('sabor-codigos-siguientes');
-            codigosIndividualesTemp.push({ codigo, sabor: selector ? selector.value : '' });
+            const fechaSel = document.getElementById('fecha-codigos-siguientes');
+            codigosIndividualesTemp.push({ codigo, sabor: selector ? selector.value : '', caducidad: fechaSel ? fechaSel.value : '' });
             input.value = '';
             input.focus();
             renderListaCodigosIndividuales();
@@ -2540,6 +2574,10 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             actualizarResumenIndividual();
         }
 
+        function cambiarFechaCodigoIndividual(index, valor) {
+            if (codigosIndividualesTemp[index]) codigosIndividualesTemp[index].caducidad = valor;
+        }
+
         function renderListaCodigosIndividuales() {
             const lista = document.getElementById('lista-codigos-individuales');
             if (!lista) return;
@@ -2548,13 +2586,17 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             const selector = document.getElementById('sabor-codigos-siguientes');
             const previo = selector ? selector.value : '';
             if (fila) fila.style.display = hayLista ? 'block' : 'none';
+            const llevaFecha = categoriaLlevaCaducidad(document.getElementById('categoria').value);
+            const filaFecha = document.getElementById('fila-fecha-individual');
+            if (filaFecha) filaFecha.style.display = llevaFecha ? 'block' : 'none';
             if (selector) selector.innerHTML = opcionesSaborHtml(previo);
             lista.innerHTML = codigosIndividualesTemp.length === 0
                 ? '<p style="font-size:12px; color:#adb5bd; margin:4px;">Todavía no has escaneado ningún código.</p>'
                 : codigosIndividualesTemp.map((c, i) => `
                     <div style="display:flex; align-items:center; gap:6px; padding:4px 6px; font-size:12.5px; border-bottom:1px solid #f1f3f5;">
                         <span style="font-family:monospace; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis;">${escaparAttr(c.codigo)}</span>
-                        ${hayLista ? `<select onchange="cambiarSaborCodigoIndividual(${i}, this.value)" style="max-width:48%; padding:4px; border-radius:6px; border:1.5px solid #e9ecef; font-size:12px;">${opcionesSaborHtml(c.sabor)}</select>` : ''}
+                        ${hayLista ? `<select onchange="cambiarSaborCodigoIndividual(${i}, this.value)" style="max-width:42%; padding:4px; border-radius:6px; border:1.5px solid #e9ecef; font-size:12px;">${opcionesSaborHtml(c.sabor)}</select>` : ''}
+                        ${llevaFecha ? `<input type="date" value="${escaparAttr(c.caducidad || '')}" onchange="cambiarFechaCodigoIndividual(${i}, this.value)" aria-label="Caducidad" style="width:128px; padding:3px; border-radius:6px; border:1.5px solid #e9ecef; font-size:11.5px;">` : ''}
                         <button type="button" onclick="quitarCodigoIndividual(${i})" aria-label="Quitar código" style="background:none; border:none; color:#dc3545; cursor:pointer; font-size:14px; padding:0 4px;">✕</button>
                     </div>
                 `).join('');
@@ -2631,9 +2673,10 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             campoTabla.style.borderColor = '#e9ecef';
 
             // Stock: renglones (manual), códigos individuales, o cantidad simple
-            let cantidadStock, codigoBarras, codigosBarras, stockRenglones, enStock;
+            let cantidadStock, codigoBarras, codigosBarras, stockRenglones, enStock, fechaCaducidad;
             if (controlStockActual === 'individual') {
-                const codigos = codigosIndividualesTemp.map(c => ({ codigo: c.codigo, sabor: c.sabor || '' }));
+                const codigos = codigosIndividualesTemp.map(c => ({ codigo: c.codigo, sabor: c.sabor || '', caducidad: c.caducidad || '' }));
+                fechaCaducidad = '';
                 cantidadStock = codigos.length;
                 codigoBarras = null;
                 codigosBarras = codigos.length > 0 ? codigos : null;
@@ -2641,11 +2684,22 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 enStock = codigos.length > 0;
             } else {
                 const renglones = renglonesStockTemp
-                    .map(r => ({ codigo: (r.codigo || '').trim(), sabor: r.sabor || '', cantidad: Math.max(0, parseInt(r.cantidad, 10) || 0) }))
+                    .map(r => ({ codigo: (r.codigo || '').trim(), sabor: r.sabor || '', cantidad: Math.max(0, parseInt(r.cantidad, 10) || 0), caducidad: r.caducidad || '' }))
                     .filter(r => r.codigo || r.sabor || r.cantidad > 0);
-                const usados = renglones.map(r => r.codigo).filter(c => c);
-                const repetido = usados.find((c, i) => usados.indexOf(c) !== i);
-                if (repetido) { mostrarNotif(`⚠️ El código ${repetido} está repetido en dos renglones`, 'error'); return; }
+                // Un mismo código puede estar en dos renglones solo si es del mismo sabor y con distinta fecha (dos lotes).
+                for (let a = 0; a < renglones.length; a++) {
+                    for (let b = a + 1; b < renglones.length; b++) {
+                        const x = renglones[a], y = renglones[b];
+                        if (!x.codigo || x.codigo !== y.codigo) continue;
+                        if (normalizarSabor(x.sabor) !== normalizarSabor(y.sabor)) {
+                            mostrarNotif(`⚠️ El código ${x.codigo} está en dos sabores distintos: cada código debe ser de un solo sabor`, 'error'); return;
+                        }
+                        if ((x.caducidad || '') === (y.caducidad || '')) {
+                            mostrarNotif(`⚠️ El código ${x.codigo} está repetido. Para repetirlo, los dos renglones deben tener distinta fecha de caducidad`, 'error'); return;
+                        }
+                    }
+                }
+                fechaCaducidad = '';
                 if (renglones.length > 0) {
                     const total = renglones.reduce((s, r) => s + r.cantidad, 0);
                     cantidadStock = total;
@@ -2655,6 +2709,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                     enStock = total > 0;
                 } else {
                     cantidadStock = document.getElementById('cantidadStock').value === '' ? null : parseInt(document.getElementById('cantidadStock').value, 10);
+                    fechaCaducidad = document.getElementById('fechaCaducidad').value;
                     codigoBarras = document.getElementById('codigoBarras').value.trim();
                     codigosBarras = null;
                     stockRenglones = null;
@@ -2677,7 +2732,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 sabores: document.getElementById('sabores').value,
                 talla: document.getElementById('talla').value.trim(),
                 color: document.getElementById('color').value.trim(),
-                fechaCaducidad: document.getElementById('fechaCaducidad').value,
+                fechaCaducidad,
                 requiereRefrigeracion: document.getElementById('requiereRefrigeracion').checked,
                 precioAdquisicion: parseFloat(document.getElementById('precioAdquisicion').value) || 0,
                 precioMayoreo: parseFloat(document.getElementById('precioMayoreo').value) || 0,
@@ -2732,14 +2787,14 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             document.getElementById('enStock').checked = p.enStock;
             const renglonesGuardados = stockRenglonesDe(p);
             if (p.controlStock === 'individual') {
-                codigosIndividualesTemp = (renglonesGuardados || []).map(r => ({ codigo: r.codigo, sabor: r.sabor }));
+                codigosIndividualesTemp = (renglonesGuardados || []).map(r => ({ codigo: r.codigo, sabor: r.sabor, caducidad: r.caducidad || '' }));
                 renglonesStockTemp = [];
                 document.getElementById('cantidadStock').value = '';
                 document.getElementById('codigoBarras').value = '';
                 cambiarControlStock('individual');
             } else {
                 codigosIndividualesTemp = [];
-                renglonesStockTemp = renglonesGuardados ? renglonesGuardados.map(r => ({ codigo: r.codigo, sabor: r.sabor, cantidad: r.cantidad })) : [];
+                renglonesStockTemp = renglonesGuardados ? renglonesGuardados.map(r => ({ codigo: r.codigo, sabor: r.sabor, cantidad: r.cantidad, caducidad: r.caducidad || '' })) : [];
                 document.getElementById('cantidadStock').value = (renglonesGuardados || p.cantidadStock === null || p.cantidadStock === undefined) ? '' : p.cantidadStock;
                 document.getElementById('codigoBarras').value = renglonesGuardados ? '' : (p.codigoBarras || '');
                 cambiarControlStock('manual');
@@ -3497,15 +3552,16 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             if (!p) return null;
             if (p.controlStock === 'individual') {
                 return aArrayStock(p.codigosBarras).map(c => typeof c === 'string'
-                    ? { codigo: c, sabor: '', cantidad: 1 }
-                    : { codigo: (c && c.codigo) || '', sabor: (c && c.sabor) || '', cantidad: 1 });
+                    ? { codigo: c, sabor: '', cantidad: 1, caducidad: '' }
+                    : { codigo: (c && c.codigo) || '', sabor: (c && c.sabor) || '', cantidad: 1, caducidad: (c && c.caducidad) || '' });
             }
             const rows = aArrayStock(p.stockRenglones);
             if (rows.length === 0) return null;
             return rows.map(r => ({
                 codigo: (r && r.codigo) || '',
                 sabor: (r && r.sabor) || '',
-                cantidad: Math.max(0, parseInt(r && r.cantidad, 10) || 0)
+                cantidad: Math.max(0, parseInt(r && r.cantidad, 10) || 0),
+                caducidad: (r && r.caducidad) || ''
             }));
         }
 
@@ -3556,17 +3612,32 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             return (producto.cantidadStock === null || producto.cantidadStock === undefined) ? Infinity : producto.cantidadStock;
         }
 
+        // Orden por fecha de caducidad: primero la que caduca antes; las que no tienen fecha, al final.
+        function porFechaCaducidad(a, b) {
+            const fa = a.caducidad || '9999-99-99';
+            const fb = b.caducidad || '9999-99-99';
+            return fa < fb ? -1 : (fa > fb ? 1 : 0);
+        }
+
         // Calcula cómo queda el stock después de descontar `cantidad` piezas.
-        // Regresa { patch, faltante, saborNoEncontrado }. `patch` es lo que se guarda en
+        // Regresa { patch, faltante, saborNoEncontrado, consumos }. `patch` es lo que se guarda en
         // Firebase (null si el producto no lleva conteo). Nunca deja cantidades negativas.
-        function calcularDescuentoStock(p, sabor, cantidad, codigoPreferido) {
+        // Se descuenta primero del renglón que coincida con el código/fecha indicados (lo que se
+        // escaneó); si no se indica, del lote que caduca antes.
+        function calcularDescuentoStock(p, sabor, cantidad, codigoPreferido, caducidadPreferida) {
             const rows = stockRenglonesDe(p);
             if (!rows) {
                 if (p.cantidadStock === null || p.cantidadStock === undefined) {
-                    return { patch: null, faltante: 0, saborNoEncontrado: false };
+                    return { patch: null, faltante: 0, saborNoEncontrado: false, consumos: [] };
                 }
                 const nuevo = Math.max(0, p.cantidadStock - cantidad);
-                return { patch: { cantidadStock: nuevo, enStock: nuevo > 0 }, faltante: Math.max(0, cantidad - p.cantidadStock), saborNoEncontrado: false };
+                const tomado = Math.min(cantidad, p.cantidadStock);
+                return {
+                    patch: { cantidadStock: nuevo, enStock: nuevo > 0 },
+                    faltante: Math.max(0, cantidad - p.cantidadStock),
+                    saborNoEncontrado: false,
+                    consumos: tomado > 0 ? [{ codigo: p.codigoBarras || '', caducidad: p.fechaCaducidad || '', cantidad: tomado }] : []
+                };
             }
 
             const nuevas = rows.map(r => ({ ...r }));
@@ -3581,36 +3652,46 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 const sinSabor = nuevas.filter(r => normalizarSabor(r.sabor) === '');
                 if (sinSabor.length > 0) candidatos = sinSabor;
             }
-            const preferidos = codigoPreferido ? candidatos.filter(r => r.codigo === codigoPreferido) : [];
-            const ordenados = [...preferidos, ...candidatos.filter(r => !preferidos.includes(r))];
+            const hayFecha = caducidadPreferida !== undefined && caducidadPreferida !== null;
+            const hayPreferencia = !!codigoPreferido || hayFecha;
+            const coincide = r => (!codigoPreferido || r.codigo === codigoPreferido) && (!hayFecha || (r.caducidad || '') === caducidadPreferida);
+            const preferidos = hayPreferencia ? candidatos.filter(coincide) : [];
+            const resto = candidatos.filter(r => !preferidos.includes(r));
+            const ordenados = [...preferidos.slice().sort(porFechaCaducidad), ...resto.slice().sort(porFechaCaducidad)];
 
             let restante = cantidad;
+            const usados = {};
             for (const r of ordenados) {
                 if (restante <= 0) break;
                 const tomar = Math.min(r.cantidad, restante);
+                if (tomar <= 0) continue;
                 r.cantidad -= tomar;
                 restante -= tomar;
+                const k = r.codigo + '|' + (r.caducidad || '');
+                if (!usados[k]) usados[k] = { codigo: r.codigo, caducidad: r.caducidad || '', cantidad: 0 };
+                usados[k].cantidad += tomar;
             }
+            const consumos = Object.values(usados);
 
             let patch;
             if (p.controlStock === 'individual') {
-                const quedan = nuevas.filter(r => r.cantidad > 0).map(r => ({ codigo: r.codigo, sabor: r.sabor }));
+                const quedan = nuevas.filter(r => r.cantidad > 0).map(r => ({ codigo: r.codigo, sabor: r.sabor, caducidad: r.caducidad || '' }));
                 patch = { codigosBarras: quedan, cantidadStock: quedan.length, enStock: quedan.length > 0 };
             } else {
                 const total = totalDeRenglones(nuevas);
                 patch = {
-                    stockRenglones: nuevas.map(r => ({ codigo: r.codigo, sabor: r.sabor, cantidad: r.cantidad })),
+                    stockRenglones: nuevas.map(r => ({ codigo: r.codigo, sabor: r.sabor, cantidad: r.cantidad, caducidad: r.caducidad || '' })),
                     cantidadStock: total,
                     enStock: total > 0
                 };
             }
-            return { patch, faltante: restante, saborNoEncontrado };
+            return { patch, faltante: restante, saborNoEncontrado, consumos };
         }
 
         // Calcula y lanza el descuento sin esperar al servidor; deja la copia local del producto al
         // día al instante (así varias líneas del mismo producto se descuentan bien una tras otra).
-        function descontarStockSinEsperar(p, sabor, cantidad, codigoPreferido) {
-            const r = calcularDescuentoStock(p, sabor, cantidad, codigoPreferido);
+        function descontarStockSinEsperar(p, sabor, cantidad, codigoPreferido, caducidadPreferida) {
+            const r = calcularDescuentoStock(p, sabor, cantidad, codigoPreferido, caducidadPreferida);
             let promesa = Promise.resolve();
             if (r.patch) {
                 promesa = db.ref('productos/' + p.id).update(r.patch);
@@ -3620,8 +3701,8 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         }
 
         // Igual que la anterior, pero espera a que el servidor confirme.
-        async function aplicarDescuentoStock(p, sabor, cantidad, codigoPreferido) {
-            const { r, promesa } = descontarStockSinEsperar(p, sabor, cantidad, codigoPreferido);
+        async function aplicarDescuentoStock(p, sabor, cantidad, codigoPreferido, caducidadPreferida) {
+            const { r, promesa } = descontarStockSinEsperar(p, sabor, cantidad, codigoPreferido, caducidadPreferida);
             await promesa;
             return r;
         }
@@ -3665,6 +3746,161 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
 
         function nombreConSabor(nombre, sabor) {
             return sabor ? `${nombre} — ${sabor}` : nombre;
+        }
+
+
+        // ===== Caducidades (control interno; nunca se muestra en la tienda) =====
+        const CATEGORIAS_SIN_CADUCIDAD = ['Accesorios', 'Otros', 'Ropa y calzado'];
+        const DIAS_AVISO_CADUCIDAD = 90;
+        const COLOR_NIVEL_CADUCIDAD = { vencido: '#7b0f1a', critico: '#dc3545', alto: '#fd7e14', medio: '#d4a000', ok: '#28a745', 'sin-fecha': '#6c757d' };
+
+        function categoriaLlevaCaducidad(categoria) {
+            return !!categoria && !CATEGORIAS_SIN_CADUCIDAD.includes(categoria);
+        }
+
+        // Días desde hoy hasta la fecha (negativo si ya venció); null si no hay fecha.
+        function diasParaFecha(fecha) {
+            const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(fecha || '');
+            if (!m) return null;
+            const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+            const f = new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+            return Math.round((f - hoy) / 86400000);
+        }
+
+        function fechaLegible(fecha) {
+            const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(fecha || '');
+            if (!m) return '';
+            const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+            return `${parseInt(m[3], 10)}/${meses[parseInt(m[2], 10) - 1]}/${m[1]}`;
+        }
+
+        function textoDias(dias) {
+            if (dias === null) return '';
+            if (dias < 0) return `vencido hace ${-dias} día${-dias === 1 ? '' : 's'}`;
+            if (dias === 0) return 'vence hoy';
+            return `en ${dias} día${dias === 1 ? '' : 's'}`;
+        }
+
+        function nivelCaducidad(dias) {
+            if (dias === null) return 'sin-fecha';
+            if (dias < 0) return 'vencido';
+            if (dias <= 30) return 'critico';
+            if (dias <= 60) return 'alto';
+            if (dias <= DIAS_AVISO_CADUCIDAD) return 'medio';
+            return 'ok';
+        }
+
+        // Lotes de un producto: [{pid, sabor, codigo, caducidad, piezas, modo, ...}]
+        function lotesDeProducto(p) {
+            if (!p || !categoriaLlevaCaducidad(p.categoria)) return [];
+            const rows = stockRenglonesDe(p);
+            if (rows) {
+                if (p.controlStock === 'individual') {
+                    const grupos = {};
+                    rows.forEach(r => {
+                        const k = normalizarSabor(r.sabor) + '|' + (r.caducidad || '');
+                        if (!grupos[k]) grupos[k] = { pid: p.id, sabor: r.sabor, codigo: '', caducidad: r.caducidad || '', piezas: 0, modo: 'individual', codigos: [] };
+                        grupos[k].piezas++;
+                        grupos[k].codigos.push(r.codigo);
+                    });
+                    return Object.values(grupos);
+                }
+                return rows.map((r, i) => ({ r, i })).filter(x => x.r.cantidad > 0)
+                    .map(x => ({ pid: p.id, sabor: x.r.sabor, codigo: x.r.codigo, caducidad: x.r.caducidad || '', piezas: x.r.cantidad, modo: 'renglon', indice: x.i }));
+            }
+            const piezas = (p.cantidadStock === null || p.cantidadStock === undefined) ? (p.enStock ? null : 0) : p.cantidadStock;
+            if (piezas === 0 || (piezas === null && !p.enStock)) return [];
+            return [{ pid: p.id, sabor: '', codigo: p.codigoBarras || '', caducidad: p.fechaCaducidad || '', piezas, modo: 'simple' }];
+        }
+
+        function resumenCaducidades() {
+            const lotes = productos.flatMap(p => lotesDeProducto(p).map(l => ({ ...l, nombre: p.nombre, costo: p.precioAdquisicion || 0, dias: diasParaFecha(l.caducidad) })));
+            const conFecha = lotes.filter(l => l.caducidad).sort(porFechaCaducidad);
+            const enRiesgo = conFecha.filter(l => l.dias !== null && l.dias <= DIAS_AVISO_CADUCIDAD);
+            const sinFecha = lotes.filter(l => !l.caducidad);
+            const costoRiesgo = enRiesgo.reduce((s, l) => s + (l.piezas || 0) * l.costo, 0);
+            return { lotes, conFecha, enRiesgo, sinFecha, costoRiesgo };
+        }
+
+        // ¿Qué lotes de este sabor están por vencer? (para avisos en pedidos, envíos y crédito)
+        function lotesPorVencerDeSabor(p, sabor) {
+            return lotesDeProducto(p)
+                .filter(l => l.caducidad)
+                .map(l => ({ ...l, dias: diasParaFecha(l.caducidad) }))
+                .filter(l => (!usaControlPorSabor(p) || normalizarSabor(l.sabor) === normalizarSabor(sabor)) && l.dias !== null && l.dias <= DIAS_AVISO_CADUCIDAD)
+                .sort(porFechaCaducidad);
+        }
+
+        // Nota corta para listas: "⏳ 2 pzas caducan 15/mar/2027 (en 30 días)". '' si no hay nada por vencer.
+        function notaCaducidadCorta(p, sabor) {
+            const por = lotesPorVencerDeSabor(p, sabor);
+            if (por.length === 0) return '';
+            const l = por[0];
+            const piezas = por.filter(x => x.caducidad === l.caducidad).reduce((s, x) => s + (x.piezas || 0), 0);
+            return `${l.dias < 0 ? '🚫' : '⏳'} ${piezas} pza${piezas === 1 ? '' : 's'}${l.dias < 0 ? ' VENCIDAS' : ' caducan'} ${fechaLegible(l.caducidad)} (${textoDias(l.dias)})`;
+        }
+
+        // ----- Carrito de tienda: piezas apartadas y lotes libres -----
+        function piezasEnCarritoDeLote(productoId, codigo, caducidad) {
+            return carritoTienda
+                .filter(x => x.id === productoId && !x.esPaqueteVIP && (x.codigo || '') === (codigo || '') && (x.caducidad || '') === (caducidad || ''))
+                .reduce((s, x) => s + x.cantidad, 0);
+        }
+
+        // Renglones que se pueden vender ahora (mismo sabor y, si se escaneó, mismo código), la fecha más próxima primero.
+        function lotesLibresParaVender(producto, sabor, codigo) {
+            const rows = stockRenglonesDe(producto);
+            if (!rows) return null;
+            const controla = usaControlPorSabor(producto);
+            const obj = normalizarSabor(sabor);
+            // El código solo filtra si algún renglón lo tiene (un código "general" del producto no filtra).
+            const usarCodigo = !!codigo && rows.some(r => r.codigo === codigo);
+            return rows
+                .filter(r => (!controla || normalizarSabor(r.sabor) === obj) && (!usarCodigo || r.codigo === codigo))
+                .map(r => ({ ...r, libres: r.cantidad - piezasEnCarritoDeLote(producto.id, r.codigo, r.caducidad) }))
+                .filter(r => r.libres > 0)
+                .sort(porFechaCaducidad);
+        }
+
+        // Aviso al dar salida a una pieza: ¿hay otra del mismo sabor que caduque antes y esté por vencer?
+        function avisoCaducidadLote(producto, sabor, codigo, caducidad) {
+            if (!producto || !categoriaLlevaCaducidad(producto.categoria)) return null;
+            const rows = stockRenglonesDe(producto);
+            if (!rows) return null;
+            const dias = diasParaFecha(caducidad);
+            if (dias !== null && dias < 0) {
+                return { nivel: 'vencido', texto: `🚫 Esta pieza está VENCIDA (${fechaLegible(caducidad)}). No la entregues.` };
+            }
+            const controla = usaControlPorSabor(producto);
+            const obj = normalizarSabor(sabor);
+            const otros = rows
+                .filter(r => (!controla || normalizarSabor(r.sabor) === obj))
+                .filter(r => !(r.codigo === (codigo || '') && (r.caducidad || '') === (caducidad || '')))
+                .map(r => ({ ...r, libres: r.cantidad - piezasEnCarritoDeLote(producto.id, r.codigo, r.caducidad), diasR: diasParaFecha(r.caducidad) }))
+                .filter(r => r.libres > 0 && r.caducidad && r.diasR !== null && r.diasR <= DIAS_AVISO_CADUCIDAD && (!caducidad || r.caducidad < caducidad))
+                .sort(porFechaCaducidad);
+            if (otros.length === 0) return null;
+            const primera = otros[0];
+            const piezas = otros.filter(r => r.caducidad === primera.caducidad).reduce((s, r) => s + r.libres, 0);
+            const estaEs = caducidad ? `Esta pieza caduca ${fechaLegible(caducidad)}` : 'Esta pieza no tiene fecha';
+            return {
+                nivel: primera.diasR < 0 ? 'vencido' : 'aviso',
+                texto: `⏳ ${estaEs}. Hay ${piezas} pza${piezas === 1 ? '' : 's'} de ${sabor || 'este producto'} que ${primera.diasR < 0 ? 'ya están VENCIDAS' : 'caducan antes'} (${fechaLegible(primera.caducidad)}, ${textoDias(primera.diasR)}). Elige una de esas.`
+            };
+        }
+
+        // Piezas que hay para una línea del carrito (su lote, o el sabor si el producto lleva stock simple).
+        function disponibleLinea(item) {
+            const producto = productos.find(p => p.id === item.id);
+            if (!producto) return Infinity;
+            const rows = stockRenglonesDe(producto);
+            if (rows) {
+                const controla = usaControlPorSabor(producto);
+                return rows
+                    .filter(r => r.codigo === (item.codigo || '') && (r.caducidad || '') === (item.caducidad || '') && (!controla || normalizarSabor(r.sabor) === normalizarSabor(item.sabor)))
+                    .reduce((s, r) => s + r.cantidad, 0);
+            }
+            return stockDisponible(producto, item.sabor || '');
         }
 
         // Texto de sabores para mostrar: si se lleva cuenta por sabor, solo los que tienen piezas.
@@ -3727,6 +3963,34 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             const producto = productos.find(p => p.id === productoId);
             if (!producto) return;
             sabor = sabor || '';
+
+            const rows = stockRenglonesDe(producto);
+            if (rows) {
+                // Producto con renglones: la línea apunta a un lote concreto (código + fecha).
+                const libres = lotesLibresParaVender(producto, sabor, codigo);
+                if (libres.length === 0) {
+                    if (producto.controlStock === 'individual' && codigo && carritoTienda.some(x => x.id === productoId && x.codigo === codigo)) {
+                        mostrarNotif('⚠️ Esa pieza ya está en el carrito', 'error');
+                    } else {
+                        mostrarNotif(`⚠️ Solo quedan ${stockDisponible(producto, sabor)} en inventario${sabor ? ' de ' + sabor : ''}`, 'error');
+                    }
+                    return;
+                }
+                const lote = libres[0];   // el que caduca antes (si se repite el código en varios lotes)
+                const individual = producto.controlStock === 'individual';
+                const existente = individual ? null : carritoTienda.find(x => x.id === productoId && !x.esPaqueteVIP && (x.sabor || '') === sabor && (x.codigo || '') === lote.codigo && (x.caducidad || '') === lote.caducidad);
+                if (existente) {
+                    existente.cantidad++;
+                } else {
+                    carritoTienda.push({ id: producto.id, nombre: producto.nombre, precioPublico: producto.precioPublico, cantidad: 1, sabor, codigo: lote.codigo, caducidad: lote.caducidad });
+                }
+                const aviso = avisoCaducidadLote(producto, sabor, lote.codigo, lote.caducidad);
+                renderCobroTienda();
+                if (aviso) mostrarNotif(aviso.texto, 'error');
+                return;
+            }
+
+            // Producto sin renglones (cantidad simple)
             const disponible = stockDisponible(producto, sabor);
             const existente = carritoTienda.find(x => x.id === productoId && !x.esPaqueteVIP && (x.sabor || '') === sabor);
             const cantidadActual = existente ? existente.cantidad : 0;
@@ -3736,9 +4000,8 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             }
             if (existente) {
                 existente.cantidad++;
-                if (codigo) existente.codigo = codigo;
             } else {
-                carritoTienda.push({ id: producto.id, nombre: producto.nombre, precioPublico: producto.precioPublico, cantidad: 1, sabor, codigo: codigo || '' });
+                carritoTienda.push({ id: producto.id, nombre: producto.nombre, precioPublico: producto.precioPublico, cantidad: 1, sabor, codigo: codigo || '', caducidad: '' });
             }
             renderCobroTienda();
         }
@@ -3747,10 +4010,15 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             const item = carritoTienda[index];
             if (!item) return;
             const producto = productos.find(p => p.id === item.id);
-            const disponible = producto ? stockDisponible(producto, item.sabor || '') : Infinity;
+            if (producto && producto.controlStock === 'individual') {
+                if (delta > 0) mostrarNotif('Cada pieza lleva su propio código: escanea la siguiente para agregarla', 'error');
+                else { carritoTienda.splice(index, 1); renderCobroTienda(); }
+                return;
+            }
+            const disponible = disponibleLinea(item);
             const nuevaCantidad = item.cantidad + delta;
             if (nuevaCantidad > disponible) {
-                mostrarNotif(`⚠️ Solo quedan ${disponible} en inventario${item.sabor ? ' de ' + item.sabor : ''}`, 'error');
+                mostrarNotif(`⚠️ Solo quedan ${disponible} en inventario${item.sabor ? ' de ' + item.sabor : ''}${item.caducidad ? ' de ese lote' : ''}`, 'error');
                 return;
             }
             if (nuevaCantidad <= 0) {
@@ -3766,13 +4034,46 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             if (!item) return;
             let nuevaCantidad = parseInt(valor, 10);
             if (isNaN(nuevaCantidad) || nuevaCantidad < 1) nuevaCantidad = 1;
-            const producto = productos.find(p => p.id === item.id);
-            const disponible = producto ? stockDisponible(producto, item.sabor || '') : Infinity;
+            const disponible = disponibleLinea(item);
             if (nuevaCantidad > disponible) {
-                mostrarNotif(`⚠️ Solo quedan ${disponible} en inventario${item.sabor ? ' de ' + item.sabor : ''}`, 'error');
+                mostrarNotif(`⚠️ Solo quedan ${disponible} en inventario${item.sabor ? ' de ' + item.sabor : ''}${item.caducidad ? ' de ese lote' : ''}`, 'error');
                 nuevaCantidad = disponible;
             }
             item.cantidad = nuevaCantidad;
+            renderCobroTienda();
+        }
+
+        // Cambia el lote de una línea cuando hay varias cajas con el mismo código pero distinta fecha.
+        function lotesAlternosDeLinea(item) {
+            const producto = productos.find(p => p.id === item.id);
+            if (!producto || item.esPaqueteVIP || producto.controlStock === 'individual') return [];
+            const rows = stockRenglonesDe(producto);
+            if (!rows || !item.codigo) return [];
+            const controla = usaControlPorSabor(producto);
+            return rows
+                .filter(r => r.codigo === item.codigo && r.cantidad > 0 && (!controla || normalizarSabor(r.sabor) === normalizarSabor(item.sabor)))
+                .sort(porFechaCaducidad);
+        }
+
+        function cambiarLoteLineaTienda(index, nuevaCaducidad) {
+            const item = carritoTienda[index];
+            if (!item) return;
+            const alternos = lotesAlternosDeLinea(item);
+            const fila = alternos.find(r => (r.caducidad || '') === nuevaCaducidad);
+            if (!fila) { renderCobroTienda(); return; }
+            const otraIdx = carritoTienda.findIndex((x, j) => j !== index && x.id === item.id && (x.codigo || '') === item.codigo && (x.caducidad || '') === nuevaCaducidad && (x.sabor || '') === (item.sabor || ''));
+            const yaEnLote = otraIdx >= 0 ? carritoTienda[otraIdx].cantidad : 0;
+            if (item.cantidad + yaEnLote > fila.cantidad) {
+                mostrarNotif(`⚠️ Ese lote solo tiene ${Math.max(0, fila.cantidad - yaEnLote)} disponibles`, 'error');
+                renderCobroTienda();
+                return;
+            }
+            if (otraIdx >= 0) {
+                carritoTienda[otraIdx].cantidad += item.cantidad;
+                carritoTienda.splice(index, 1);
+            } else {
+                item.caducidad = nuevaCaducidad;
+            }
             renderCobroTienda();
         }
 
@@ -3877,6 +4178,25 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 .reduce((sum, i) => sum + i.precioPublico, 0);
             if (paquete.tipoPrecio === 'fijo') return paquete.valor;
             return sumaProductos * (1 - paquete.valor / 100);
+        }
+
+        // Nota para pedidos: lotes de ese producto y sabor que están por vencer (para entregar primero esos)
+        function notaCaducidadPedidoItem(it) {
+            if (!it || !it.productoId) return '';
+            const prod = productos.find(x => x.id === it.productoId);
+            if (!prod) return '';
+            const nota = notaCaducidadCorta(prod, it.saborElegido || '');
+            if (!nota) return '';
+            return `<div style="font-size:11.5px; font-weight:700; color:#b45f00; margin:1px 0 4px 12px;">${nota} — entrega primero ese lote</div>`;
+        }
+
+        // De un descuento de stock, los lotes (con fecha) de los que salieron las piezas: para anotarlos en envíos y créditos.
+        function lotesDeConsumo(resultado) {
+            return ((resultado && resultado.consumos) || []).filter(c => c.caducidad).map(c => ({ caducidad: c.caducidad, cantidad: c.cantidad }));
+        }
+
+        function textoLotes(lotes) {
+            return (lotes && lotes.length) ? ' (caduca ' + lotes.map(l => fechaLegible(l.caducidad)).join(', ') + ')' : '';
         }
 
         function seleccionarPaqueteTienda(paqueteId) {
@@ -4143,12 +4463,25 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                         `;
                         return;
                     }
+                    const productoLinea = productos.find(p => p.id === item.id);
+                    const avisoLinea = (productoLinea && !item.esPaqueteVIP && modoCobroTienda !== 'retiro') ? avisoCaducidadLote(productoLinea, item.sabor || '', item.codigo || '', item.caducidad || '') : null;
+                    const esPiezaUnica = !!productoLinea && productoLinea.controlStock === 'individual';
+                    const alternos = lotesAlternosDeLinea(item);
                     htmlPrincipal += `
                         <div style="background:#ffffff; border:1px solid #eef1f1; border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:12px;">
                             <div style="display:flex; justify-content:space-between; gap:8px;">
-                                <div style="font-weight:700; font-size:13.5px; color:#17242b;">${item.nombre}${item.sabor ? ` <span style="color:#17a2b8;">— ${item.sabor}</span>` : ''}</div>
+                                <div style="font-weight:700; font-size:13.5px; color:#17242b;">${item.nombre}${item.sabor ? ` <span style="color:#17a2b8;">— ${item.sabor}</span>` : ''}${item.caducidad ? ` <span style="color:#6c757d; font-weight:600; font-size:11.5px;">· caduca ${fechaLegible(item.caducidad)}</span>` : ''}</div>
                                 <div style="font-weight:800; font-size:13.5px; color:#17242b; white-space:nowrap;">$${(item.precioPublico * item.cantidad).toFixed(2)}</div>
                             </div>
+                            ${avisoLinea ? `<div style="font-size:12.5px; font-weight:700; line-height:1.35; color:${avisoLinea.nivel === 'vencido' ? '#7b0f1a' : '#8a4b00'}; background:${avisoLinea.nivel === 'vencido' ? '#fde8ea' : '#fff3e0'}; border:1.5px solid ${avisoLinea.nivel === 'vencido' ? '#dc3545' : '#ff9800'}; border-radius:10px; padding:8px 10px;">${avisoLinea.texto}</div>` : ''}
+                            ${alternos.length > 1 ? `<div style="display:flex; align-items:center; gap:8px; font-size:12px; color:#495057;">Lote:
+                                <select onchange="cambiarLoteLineaTienda(${i}, this.value)" style="flex:1; padding:8px; border-radius:8px; border:1.5px solid #ced4da; font-size:13px;">
+                                    ${alternos.map(r => `<option value="${r.caducidad || ''}"${(r.caducidad || '') === (item.caducidad || '') ? ' selected' : ''}>${r.caducidad ? 'Caduca ' + fechaLegible(r.caducidad) : 'Sin fecha'} (${r.cantidad} pzas)</option>`).join('')}
+                                </select></div>` : ''}
+                            ${esPiezaUnica ? `<div style="display:flex; align-items:center; justify-content:space-between;">
+                                <span style="font-size:12.5px; color:#6c757d;">1 pieza (código ${item.codigo})</span>
+                                <button onclick="quitarProductoTienda(${i})" style="background:transparent; border:none; color:#dc3545; font-size:12px; font-weight:700; text-decoration:underline; cursor:pointer; padding:8px;">Eliminar</button>
+                            </div>` : `
                             <div style="display:flex; align-items:center; justify-content:space-between;">
                                 <div style="display:flex; align-items:center; gap:8px;">
                                     <button onclick="cambiarCantidadTienda(${i}, -1)" aria-label="Restar uno" style="width:52px; height:68px; border-radius:10px; border:1px solid #ced4da; background:#ffffff; font-weight:700; font-size:24px; cursor:pointer;">−</button>
@@ -4156,7 +4489,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                                     <button onclick="cambiarCantidadTienda(${i}, 1)" aria-label="Sumar uno" style="width:52px; height:68px; border-radius:10px; border:1px solid #ced4da; background:#ffffff; font-weight:700; font-size:24px; cursor:pointer;">+</button>
                                 </div>
                                 <button onclick="quitarProductoTienda(${i})" style="background:transparent; border:none; color:#dc3545; font-size:12px; font-weight:700; text-decoration:underline; cursor:pointer; padding:8px;">Eliminar</button>
-                            </div>
+                            </div>`}
                         </div>
                     `;
                 });
@@ -4309,10 +4642,10 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 if (item.esPaqueteVIP) continue;
                 const producto = productos.find(p => p.id === item.id);
                 if (producto) {
-                    await aplicarDescuentoStock(producto, item.sabor || '', item.cantidad, item.codigo || '');
+                    await aplicarDescuentoStock(producto, item.sabor || '', item.cantidad, item.codigo || '', item.caducidad || '');
                     costoTotal += (producto.precioAdquisicion || 0) * item.cantidad;
                 }
-                detalleItems.push(`${nombreConSabor(item.nombre, item.sabor)} x${item.cantidad}`);
+                detalleItems.push(`${nombreConSabor(item.nombre, item.sabor)} x${item.cantidad}${item.caducidad ? ' (lote ' + fechaLegible(item.caducidad) + ')' : ''}`);
             }
 
             const hoy = new Date().toISOString().slice(0, 10);
@@ -4357,10 +4690,10 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                     if (item.esPaqueteVIP) continue;
                     const producto = productos.find(p => p.id === item.id);
                     if (!producto) continue;
-                    await aplicarDescuentoStock(producto, item.sabor || '', item.cantidad, item.codigo || '');
+                    await aplicarDescuentoStock(producto, item.sabor || '', item.cantidad, item.codigo || '', item.caducidad || '');
                 }
 
-                const itemsVenta = carritoTienda.map(i => ({ productoId: i.id, nombre: i.nombre, saborElegido: i.sabor || '', precioPublico: i.precioPublico, cantidad: i.cantidad }));
+                const itemsVenta = carritoTienda.map(i => ({ productoId: i.id, nombre: i.nombre, saborElegido: i.sabor || '', caducidad: i.caducidad || '', precioPublico: i.precioPublico, cantidad: i.cantidad }));
                 const ganancia = calcularGananciaPedido({ items: itemsVenta }) - descuento;
 
                 const numeroOrdenResultado = await generarNumeroOrden();
@@ -4751,7 +5084,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             actualizarBadgePedidos();
         });
 
-        const VISTAS_ADMIN = ['vista-pedidos', 'vista-cupones', 'vista-menciones', 'vista-vip', 'vista-distribuidores', 'vista-resenas', 'vista-envios', 'vista-historial-envios', 'vista-historial-ventas', 'vista-finanzas', 'vista-team-coaching', 'vista-coaching', 'vista-sorteos', 'vista-clientes', 'vista-codigos-barras', 'vista-sucursales', 'vista-fiado'];
+        const VISTAS_ADMIN = ['vista-pedidos', 'vista-cupones', 'vista-menciones', 'vista-vip', 'vista-distribuidores', 'vista-resenas', 'vista-envios', 'vista-historial-envios', 'vista-historial-ventas', 'vista-finanzas', 'vista-team-coaching', 'vista-coaching', 'vista-sorteos', 'vista-clientes', 'vista-codigos-barras', 'vista-sucursales', 'vista-fiado', 'vista-caducidades'];
 
         const TITULOS_VISTAS = {
             'vista-pedidos': '📋 Pedidos pendientes de pago',
@@ -4770,7 +5103,8 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             'vista-clientes': '👥 Clientes',
             'vista-codigos-barras': '🏷️ Códigos de barras',
             'vista-sucursales': '🏪 Sucursales',
-            'vista-fiado': '💳 Fiado'
+            'vista-fiado': '💳 Fiado',
+            'vista-caducidades': '⏳ Caducidades'
         };
 
         function mostrarBarraVolverCatalogo(idVista) {
@@ -4850,7 +5184,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                                 <div style="font-size: 20px; font-weight: 900; color: #6f42c1;">$${p.total.toFixed(2)}</div>
                             </div>
                             <div style="font-size: 13px; color: #495057; margin-bottom: 10px;">
-                                ${p.items.map(it => `• ${it.nombre}${it.saborElegido ? ' (' + it.saborElegido + ')' : ''}${(it.talla || it.color) ? ' [' + [it.talla, it.color].filter(Boolean).join(' · ') + ']' : ''} × ${it.cantidad}`).join('<br>')}
+                                ${p.items.map(it => `• ${it.nombre}${it.saborElegido ? ' (' + it.saborElegido + ')' : ''}${(it.talla || it.color) ? ' [' + [it.talla, it.color].filter(Boolean).join(' · ') + ']' : ''} × ${it.cantidad}${notaCaducidadPedidoItem(it)}`).join('<br>')}
                             </div>
                             <div style="background:#f8f9fa; border-radius:8px; padding:10px; font-size:12px; color:#495057;">
                                 ${ubicacion}
@@ -5132,6 +5466,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 document.getElementById('finanzas-gastos').textContent = '$' + totalGastos.toFixed(2);
                 document.getElementById('finanzas-margen-bruto').textContent = '$' + margenBruto.toFixed(2);
                 document.getElementById('finanzas-descuentos-otorgados').textContent = '$' + descuentosOtorgados.toFixed(2);
+                document.getElementById('finanzas-riesgo-caducidad').textContent = '$' + resumenCaducidades().costoRiesgo.toFixed(2);
                 const ganNetaEl = document.getElementById('finanzas-ganancia-neta');
                 ganNetaEl.textContent = '$' + gananciaNeta.toFixed(2);
                 ganNetaEl.style.color = gananciaNeta >= 0 ? '#6610f2' : '#dc3545';
@@ -5865,6 +6200,176 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             mostrarNotif(`📄 PDF generado con ${seleccionados.length} etiqueta${seleccionados.length === 1 ? '' : 's'}`, 'success');
         }
 
+        // ===== Herramienta Caducidades =====
+        let caducidadesVerTodos = false;
+        let caducidadesSinFechaAbierto = false;
+        let lotesVista = [];          // lotes que se ven en pantalla (los botones apuntan a su posición)
+        let lotesSinFechaVista = [];  // lotes sin fecha que se pueden fechar desde aquí
+
+        function actualizarBadgeCaducidades() {
+            const contador = document.getElementById('caducidades-count');
+            if (!contador) return;
+            const n = resumenCaducidades().enRiesgo.length;
+            contador.textContent = n;
+            contador.style.display = n > 0 ? 'inline' : 'none';
+            actualizarBadgeHerramientas();
+        }
+        setInterval(actualizarBadgeCaducidades, 30 * 60 * 1000);   // por si cambia el día con la página abierta
+
+        // Etiqueta chica para las tarjetas del panel (solo para ti)
+        function etiquetaCaducidadProducto(p, compacta) {
+            const lotes = lotesDeProducto(p).filter(l => l.caducidad).map(l => ({ ...l, dias: diasParaFecha(l.caducidad) })).sort(porFechaCaducidad);
+            if (lotes.length === 0) return '';
+            const l = lotes[0];
+            const nivel = nivelCaducidad(l.dias);
+            const extra = lotes.length > 1 ? ` · +${lotes.length - 1} lote${lotes.length - 1 === 1 ? '' : 's'}` : '';
+            const tam = compacta ? '10.5px' : '12px';
+            if (nivel === 'ok') return `<p style="color:#6c757d; font-size:${tam}; margin:${compacta ? '3px 0' : '5px 0'};">⏳ Caduca ${fechaLegible(l.caducidad)}${extra}</p>`;
+            return `<p style="color:${COLOR_NIVEL_CADUCIDAD[nivel]}; font-size:${tam}; margin:${compacta ? '3px 0' : '5px 0'}; font-weight:700;">⏳ ${l.dias < 0 ? 'VENCIDO' : 'Caduca'} ${fechaLegible(l.caducidad)} (${textoDias(l.dias)})${extra}</p>`;
+        }
+
+        function mostrarVistaCaducidades() {
+            document.getElementById('filtros-wrap').style.display = 'none';
+            document.getElementById('productos').style.display = 'none';
+            ocultarTodasLasVistas();
+            document.getElementById('vista-caducidades').style.display = 'block';
+            mostrarBarraVolverCatalogo('vista-caducidades');
+            renderCaducidades();
+        }
+
+        function toggleCaducidadesTodos() {
+            caducidadesVerTodos = !caducidadesVerTodos;
+            renderCaducidades();
+        }
+
+        function toggleCaducidadesSinFecha() {
+            caducidadesSinFechaAbierto = !caducidadesSinFechaAbierto;
+            renderCaducidades();
+        }
+
+        function renderCaducidades() {
+            const r = resumenCaducidades();
+            const conteo = { vencido: 0, critico: 0, alto: 0, medio: 0 };
+            r.enRiesgo.forEach(l => { conteo[nivelCaducidad(l.dias)]++; });
+            const tarjeta = (titulo, valor, color) => `<div style="flex:1; min-width:78px; text-align:center; background:#f8f9fa; border-radius:10px; padding:10px 6px;">
+                <div style="font-size:20px; font-weight:900; color:${color};">${valor}</div><div style="font-size:11px; color:#6c757d; font-weight:700;">${titulo}</div></div>`;
+            document.getElementById('caducidades-resumen').innerHTML = `
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    ${tarjeta('Vencidos', conteo.vencido, COLOR_NIVEL_CADUCIDAD.vencido)}
+                    ${tarjeta('≤ 30 días', conteo.critico, COLOR_NIVEL_CADUCIDAD.critico)}
+                    ${tarjeta('≤ 60 días', conteo.alto, COLOR_NIVEL_CADUCIDAD.alto)}
+                    ${tarjeta('≤ 90 días', conteo.medio, COLOR_NIVEL_CADUCIDAD.medio)}
+                </div>
+                <div style="margin-top:12px; font-size:13px; color:#495057;">Dinero en riesgo (a costo): <strong style="color:#b45f00;">$${r.costoRiesgo.toFixed(2)}</strong></div>`;
+            document.getElementById('btn-caducidades-todos').textContent = caducidadesVerTodos ? 'Ver solo lo que caduca en 90 días' : 'Ver todos los lotes con fecha';
+
+            // Productos sin fecha (dentro de la herramienta, sin alarmar)
+            const porProducto = {};
+            r.sinFecha.forEach(l => { porProducto[l.pid] = true; });
+            const nSinFecha = Object.keys(porProducto).length;
+            lotesSinFechaVista = r.sinFecha;
+            let htmlSin = '';
+            if (nSinFecha > 0) {
+                htmlSin = `<div style="background:#fff8e1; border:1.5px solid #ffc107; border-radius:12px; padding:12px 14px; margin-bottom:14px;">
+                    <div onclick="toggleCaducidadesSinFecha()" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-size:13.5px; font-weight:800; color:#7a5c00;">
+                        <span>⚠️ ${nSinFecha} producto${nSinFecha === 1 ? '' : 's'} sin fecha de caducidad</span><span>${caducidadesSinFechaAbierto ? '▲' : '▼'}</span>
+                    </div>
+                    ${caducidadesSinFechaAbierto ? `<div style="margin-top:10px;">${r.sinFecha.map((l, k) => `
+                        <div style="background:white; border-radius:10px; padding:10px; margin-bottom:8px;">
+                            <div style="font-size:13px; font-weight:700;">${l.nombre}${l.sabor ? ' — ' + l.sabor : ''}</div>
+                            <div style="font-size:11.5px; color:#6c757d; margin-bottom:6px;">${l.piezas === null ? 'sin conteo' : l.piezas + ' pza' + (l.piezas === 1 ? '' : 's')}${l.codigo ? ' · código ' + l.codigo : ''}</div>
+                            <div style="display:flex; gap:6px;">
+                                <input type="date" id="fecha-sin-${k}" style="flex:1; min-width:0; padding:8px; border-radius:8px; border:1.5px solid #e9ecef; font-size:13px;">
+                                <button class="btn" style="background:#28a745; color:white; padding:8px 14px; font-size:12.5px;" onclick="guardarFechaLoteSinFecha(${k})">Guardar</button>
+                            </div>
+                        </div>`).join('')}</div>` : ''}
+                </div>`;
+            }
+            document.getElementById('caducidades-sin-fecha').innerHTML = htmlSin;
+
+            // Lista de lotes
+            const lista = (caducidadesVerTodos ? r.conFecha : r.enRiesgo);
+            lotesVista = lista;
+            const cont = document.getElementById('lista-caducidades');
+            if (lista.length === 0) {
+                cont.innerHTML = `<div style="text-align:center; padding:36px 20px; background:white; border-radius:15px;"><div style="font-size:50px;">✅</div><h3 style="color:#6c757d; margin-top:8px;">${caducidadesVerTodos ? 'Todavía no hay lotes con fecha' : 'Nada vencido ni por vencer en los próximos 90 días'}</h3></div>`;
+                return;
+            }
+            cont.innerHTML = lista.map((l, k) => {
+                const nivel = nivelCaducidad(l.dias);
+                const color = COLOR_NIVEL_CADUCIDAD[nivel];
+                return `<div class="pedido-card" style="border-left-color:${color};">
+                    <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:flex-start;">
+                        <div style="min-width:0; flex:1;">
+                            <strong style="font-size:14.5px;">${l.nombre}${l.sabor ? ' — ' + l.sabor : ''}</strong>
+                            <div style="font-size:12px; color:#6c757d; margin-top:2px;">${l.piezas === null ? 'sin conteo' : l.piezas + ' pza' + (l.piezas === 1 ? '' : 's')}${l.codigo ? ' · código ' + l.codigo : ''}${l.modo === 'individual' ? ' · piezas con código propio' : ''}${l.piezas !== null ? ' · $' + (l.piezas * l.costo).toFixed(2) + ' a costo' : ''}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-weight:800; color:${color};">${nivel === 'vencido' ? '🚫 VENCIDO' : '⏳'} ${fechaLegible(l.caducidad)}</div>
+                            <div style="font-size:12px; color:${color}; font-weight:700;">${textoDias(l.dias)}</div>
+                        </div>
+                    </div>
+                    <button class="btn" style="margin-top:10px; ${nivel === 'vencido' ? 'background:#dc3545; color:white;' : 'background:white; color:#dc3545; border:1.5px solid #dc3545;'} font-size:12.5px; padding:8px 14px;" onclick="retirarLoteCaducado(${k})">🗑️ Retirar como caducado</button>
+                </div>`;
+            }).join('');
+        }
+
+        // Pone la fecha a un lote que no la tenía
+        async function guardarFechaLoteSinFecha(k) {
+            const l = lotesSinFechaVista[k];
+            const fecha = (document.getElementById('fecha-sin-' + k) || {}).value;
+            if (!l) return;
+            if (!fecha) { mostrarNotif('⚠️ Elige la fecha primero', 'error'); return; }
+            const p = productos.find(x => x.id === l.pid);
+            if (!p) return;
+            let patch;
+            if (l.modo === 'simple') {
+                patch = { fechaCaducidad: fecha };
+            } else {
+                const rows = stockRenglonesDe(p).map(r => ({ ...r }));
+                if (l.modo === 'individual') {
+                    rows.forEach(r => { if (!r.caducidad && normalizarSabor(r.sabor) === normalizarSabor(l.sabor)) r.caducidad = fecha; });
+                    patch = { codigosBarras: rows.map(r => ({ codigo: r.codigo, sabor: r.sabor, caducidad: r.caducidad || '' })) };
+                } else {
+                    if (rows[l.indice]) rows[l.indice].caducidad = fecha;
+                    patch = { stockRenglones: rows.map(r => ({ codigo: r.codigo, sabor: r.sabor, cantidad: r.cantidad, caducidad: r.caducidad || '' })) };
+                }
+            }
+            Object.assign(p, patch);
+            try {
+                await db.ref('productos/' + p.id).update(patch);
+                mostrarNotif('✅ Fecha guardada', 'success');
+            } catch (e) {
+                mostrarNotif('❌ No se pudo guardar la fecha: ' + e.message, 'error');
+            }
+            actualizarBadgeCaducidades();
+            renderCaducidades();
+        }
+
+        // Abre Retiro de inventario ya cargado con ese lote y el motivo "caducado"
+        function retirarLoteCaducado(k) {
+            const l = lotesVista[k];
+            if (!l) return;
+            const p = productos.find(x => x.id === l.pid);
+            if (!p) return;
+            let piezas = l.piezas;
+            if (piezas === null) {
+                piezas = parseInt(prompt('¿Cuántas piezas vas a retirar?', '1'), 10);
+                if (!piezas || piezas < 1) return;
+            }
+            abrirCobroTienda();
+            elegirRetiroTienda();
+            carritoTienda = [];
+            if (l.modo === 'individual') {
+                l.codigos.slice(0, piezas).forEach(cod => carritoTienda.push({ id: p.id, nombre: p.nombre, precioPublico: p.precioPublico, cantidad: 1, sabor: l.sabor || '', codigo: cod, caducidad: l.caducidad || '' }));
+            } else {
+                carritoTienda.push({ id: p.id, nombre: p.nombre, precioPublico: p.precioPublico, cantidad: piezas, sabor: l.sabor || '', codigo: l.codigo || '', caducidad: l.modo === 'simple' ? '' : (l.caducidad || '') });
+            }
+            renderCobroTienda();
+            const motivo = document.getElementById('retiro-motivo');
+            if (motivo) motivo.value = 'Producto dañado o caducado';
+        }
+
         // ===== Sucursales =====
         let sucursalesCache = [];
         let sucursalActualId = null;
@@ -6058,7 +6563,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 ? '<p style="font-size:12px; color:#adb5bd; margin:4px;">Sin productos con piezas disponibles.</p>'
                 : lineas.map(l => `
                 <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid #f1f3f5;">
-                    <span style="font-size:12.5px; flex:1;">${l.etiqueta}${l.disponible !== null ? ` <span style="color:#adb5bd; font-size:11px;">(${l.disponible} disp.)</span>` : ''}</span>
+                    <span style="font-size:12.5px; flex:1;">${l.etiqueta}${l.disponible !== null ? ` <span style="color:#adb5bd; font-size:11px;">(${l.disponible} disp.)</span>` : ''}${l.nota ? `<div style="font-size:11px; font-weight:700; color:#b45f00;">${l.nota}</div>` : ''}</span>
                     <input type="number" min="0" value="${sucursalEnvioSeleccion[l.clave] || 0}" style="width:55px; padding:4px; border-radius:6px; border:1.5px solid #e9ecef;" onchange="sucursalEnvioSeleccion['${l.clave}'] = parseInt(this.value)||0">
                 </div>
             `).join('');
@@ -6070,10 +6575,11 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 return opcionesSaborDe(p).map(o => ({
                     clave: claveStockSucursal(p.id, o.sabor),
                     etiqueta: nombreConSabor(p.nombre, o.sabor || 'Sin sabor asignado'),
-                    disponible: o.disponible
+                    disponible: o.disponible,
+                    nota: notaCaducidadCorta(p, o.sabor || '')
                 }));
             }
-            return [{ clave: p.id, etiqueta: p.nombre, disponible: null }];
+            return [{ clave: p.id, etiqueta: p.nombre, disponible: null, nota: notaCaducidadCorta(p, '') }];
         }
 
         async function confirmarEnvioSucursal() {
@@ -6112,7 +6618,11 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
 
             for (const it of detalleItems) {
                 const p = productos.find(x => x.id === it.productoId);
-                if (p) await aplicarDescuentoStock(p, it.sabor || '', it.cantidad);
+                if (p) {
+                    const rDesc = await aplicarDescuentoStock(p, it.sabor || '', it.cantidad);
+                    const lotes = lotesDeConsumo(rDesc);
+                    if (lotes.length) it.lotes = lotes;
+                }
                 const clave = claveStockSucursal(it.productoId, it.sabor || '');
                 const actual = sucursalActualStock[clave] || 0;
                 await db.ref(`sucursales/${sucursalActualId}/stock/${clave}`).set(actual + it.cantidad);
@@ -6436,7 +6946,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                         <span id="envio-chevron-${e.id}" style="font-size:13px; color:#6c757d; transition:transform 0.2s;">▼</span>
                     </div>
                     <div id="envio-detalle-${e.id}" style="display:none; padding:4px 0 10px 8px;">
-                        ${(e.items || []).map(it => `<div style="font-size:12.5px; color:#495057; padding:2px 0;">• ${it.cantidad}x ${it.nombre}</div>`).join('')}
+                        ${(e.items || []).map(it => `<div style="font-size:12.5px; color:#495057; padding:2px 0;">• ${it.cantidad}x ${it.nombre}${textoLotes(it.lotes)}</div>`).join('')}
                     </div>
                 </div>
             `).join('');
@@ -6578,7 +7088,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 ? '<p style="font-size:12px; color:#adb5bd; margin:4px;">Sin productos con piezas disponibles.</p>'
                 : lineas.map(l => `
                 <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid #f1f3f5;">
-                    <span style="font-size:12.5px; flex:1;">${l.etiqueta}${l.disponible !== null ? ` <span style="color:#adb5bd; font-size:11px;">(${l.disponible} disp.)</span>` : ''}</span>
+                    <span style="font-size:12.5px; flex:1;">${l.etiqueta}${l.disponible !== null ? ` <span style="color:#adb5bd; font-size:11px;">(${l.disponible} disp.)</span>` : ''}${l.nota ? `<div style="font-size:11px; font-weight:700; color:#b45f00;">${l.nota}</div>` : ''}</span>
                     <input type="number" min="0" value="${creditoSeleccionProductos[l.clave] || 0}" style="width:55px; padding:4px; border-radius:6px; border:1.5px solid #e9ecef;" onchange="actualizarCantidadCredito('${l.clave}', this.value)">
                 </div>
             `).join('');
@@ -6628,9 +7138,12 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 const p = productos.find(x => x.id === pid);
                 if (!p) continue;
                 const precioUnit = tipoPrecio === 'mayoreo' ? p.precioMayoreo : p.precioPublico;
-                detalleItems.push({ productoId: pid, nombre: p.nombre, saborElegido: sabor, cantidad: cant, precioUnitario: precioUnit, precioAdquisicion: p.precioAdquisicion });
+                const rDesc = await aplicarDescuentoStock(p, sabor, cant);
+                const itemCredito = { productoId: pid, nombre: p.nombre, saborElegido: sabor, cantidad: cant, precioUnitario: precioUnit, precioAdquisicion: p.precioAdquisicion };
+                const lotesCredito = lotesDeConsumo(rDesc);
+                if (lotesCredito.length) itemCredito.lotes = lotesCredito;
+                detalleItems.push(itemCredito);
                 total += precioUnit * cant;
-                await aplicarDescuentoStock(p, sabor, cant);
             }
 
             await db.ref('fiadoCreditos').push({
@@ -6665,7 +7178,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                             <div>
                                 <div style="font-size:12px; color:#6c757d;">${new Date(c.fecha).toLocaleDateString('es-MX')} · ${c.tipoPrecio === 'mayoreo' ? 'Precio Mayoreo' : 'Precio Público'}</div>
-                                <div style="font-size:13px;">${(c.items || []).map(it => `${it.cantidad}x ${it.nombre}${it.saborElegido ? ' (' + it.saborElegido + ')' : ''}`).join(', ')}</div>
+                                <div style="font-size:13px;">${(c.items || []).map(it => `${it.cantidad}x ${it.nombre}${it.saborElegido ? ' (' + it.saborElegido + ')' : ''}${textoLotes(it.lotes)}`).join(', ')}</div>
                             </div>
                             <div style="text-align:right;">
                                 <div style="font-weight:800;">$${c.monto.toFixed(2)}</div>
@@ -7383,7 +7896,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                         <div style="font-size: 20px; font-weight: 900; color: #6f42c1;">$${p.total.toFixed(2)}</div>
                     </div>
                     <div style="font-size: 13px; color: #495057; margin-bottom: 12px;">
-                        ${p.items.map(it => `• ${it.nombre}${it.saborElegido ? ' (' + it.saborElegido + ')' : ''}${(it.talla || it.color) ? ' [' + [it.talla, it.color].filter(Boolean).join(' · ') + ']' : ''} × ${it.cantidad}`).join('<br>')}
+                        ${p.items.map(it => `• ${it.nombre}${it.saborElegido ? ' (' + it.saborElegido + ')' : ''}${(it.talla || it.color) ? ' [' + [it.talla, it.color].filter(Boolean).join(' · ') + ']' : ''} × ${it.cantidad}${notaCaducidadPedidoItem(it)}`).join('<br>')}
                     </div>
                     ${renderInfoEnvioPedido(p)}
                     <div style="display:flex; gap:10px;">
@@ -7407,7 +7920,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                         <div style="font-size: 20px; font-weight: 900; color: #6f42c1;">$${p.total.toFixed(2)}</div>
                     </div>
                     <div style="font-size: 13px; color: #495057; margin-bottom: 12px;">
-                        ${p.items.map(it => `• ${it.nombre}${it.saborElegido ? ' (' + it.saborElegido + ')' : ''}${(it.talla || it.color) ? ' [' + [it.talla, it.color].filter(Boolean).join(' · ') + ']' : ''} × ${it.cantidad}`).join('<br>')}
+                        ${p.items.map(it => `• ${it.nombre}${it.saborElegido ? ' (' + it.saborElegido + ')' : ''}${(it.talla || it.color) ? ' [' + [it.talla, it.color].filter(Boolean).join(' · ') + ']' : ''} × ${it.cantidad}${notaCaducidadPedidoItem(it)}`).join('<br>')}
                     </div>
                     ${renderInfoEnvioPedido(p)}
                     ${esTienda ? `
@@ -7642,7 +8155,12 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         async function marcarPedidoPagado(pedidoId) {
             const pedido = pedidosPendientes.find(p => p.id === pedidoId);
             if (!pedido) return;
-            if (!confirm(`¿Confirmas que recibiste el pago de $${pedido.total.toFixed(2)} de ${pedido.clienteNombre}?`)) return;
+            const recordatorios = (pedido.items || []).map(it => {
+                const prod = it.productoId ? productos.find(x => x.id === it.productoId) : null;
+                const nota = prod ? notaCaducidadCorta(prod, it.saborElegido || '') : '';
+                return nota ? `• ${nombreConSabor(it.nombre, it.saborElegido)}: ${nota}` : '';
+            }).filter(Boolean);
+            if (!confirm(`¿Confirmas que recibiste el pago de $${pedido.total.toFixed(2)} de ${pedido.clienteNombre}?` + (recordatorios.length ? `\n\nRevisa que entregues el lote correcto:\n${recordatorios.join('\n')}` : ''))) return;
             // Evita que un doble clic registre dos veces el pago y descuente dos veces el inventario.
             if (pedidosPagoEnCurso.has(pedidoId)) return;
             pedidosPagoEnCurso.add(pedidoId);
