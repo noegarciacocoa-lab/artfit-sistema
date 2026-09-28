@@ -4066,10 +4066,28 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             document.getElementById('modal-imagen-grande').classList.remove('show');
         }
 
-        let coachingTransformacionesLista = [];
-        let coachingTestimoniosLista = [];
-        let coachingOffsetT = 0;
-        let coachingOffsetTe = 0;
+        // El feed de Coaching se trae de Firebase por partes (más recientes primero), nunca todo
+        // de un jalón — así, aunque haya muchas transformaciones o testimonios con video, la página
+        // solo baja las que realmente se van a mostrar.
+        const COACHING_LOTE_TRANSFORMACIONES = 6;
+        const COACHING_LOTE_TESTIMONIOS = 3;
+        let coachingCursorT = null;    // llave de la más vieja ya traída (transformaciones)
+        let coachingCursorTe = null;   // llave de la más vieja ya traída (testimonios)
+        let coachingSinMasT = false;
+        let coachingSinMasTe = false;
+        let coachingCargandoMas = false;
+
+        // Trae el siguiente lote de una colección (más reciente primero), usando la llave de Firebase como cursor.
+        function traerLoteCoaching(coleccion, cursor, tamano) {
+            let ref = db.ref(coleccion).orderByKey();
+            ref = cursor ? ref.endBefore(cursor).limitToLast(tamano) : ref.limitToLast(tamano);
+            return ref.once('value').then(snapshot => {
+                const items = [];
+                snapshot.forEach(hijo => { items.push({ key: hijo.key, val: hijo.val() }); });
+                items.reverse();   // más reciente primero
+                return items;
+            });
+        }
 
         function abrirModalCoaching() {
             db.ref('coachingRetos').once('value').then(snapshot => {
@@ -4093,26 +4111,14 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 }
             });
 
-            Promise.all([
-                db.ref('coachingTransformaciones').once('value'),
-                db.ref('coachingTestimonios').once('value')
-            ]).then(([snapT, snapTe]) => {
-                const dataT = snapT.val();
-                const dataTe = snapTe.val();
-                coachingTransformacionesLista = dataT ? Object.values(dataT) : [];
-                coachingTestimoniosLista = dataTe ? Object.values(dataTe) : [];
-                coachingOffsetT = 0;
-                coachingOffsetTe = 0;
-
-                const feedWrap = document.getElementById('coaching-feed-wrap');
-                if (coachingTransformacionesLista.length === 0 && coachingTestimoniosLista.length === 0) {
-                    feedWrap.style.display = 'none';
-                } else {
-                    feedWrap.style.display = 'block';
-                    document.getElementById('coaching-feed').innerHTML = '';
-                    verMasCoaching();
-                }
-            });
+            coachingCursorT = null;
+            coachingCursorTe = null;
+            coachingSinMasT = false;
+            coachingSinMasTe = false;
+            document.getElementById('coaching-feed').innerHTML = '';
+            document.getElementById('coaching-feed-wrap').style.display = 'none';
+            document.getElementById('coaching-ver-mas-btn').style.display = 'none';
+            verMasCoaching();
 
             document.getElementById('modal-coaching').classList.add('show');
         }
@@ -4122,33 +4128,67 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 return `<img src="${item.data}" style="width:100%; border-radius:10px; margin-bottom:14px; cursor:pointer;" onclick="verComprobanteGrande('${item.data}')">`;
             }
             const t = item.data;
+            const idVideo = 'video-testi-' + Math.random().toString(36).slice(2);
             return `
                 <div style="background:#f8f9fa; border-radius:10px; padding:12px; margin-bottom:14px;">
-                    ${t.fotoBase64 ? `<img src="${t.fotoBase64}" style="width:100%; border-radius:8px; margin-bottom:10px; cursor:pointer;" onclick="verComprobanteGrande('${t.fotoBase64}')">` : ''}
+                    ${t.video ? `
+                        <div id="${idVideo}" style="position:relative; width:100%; aspect-ratio:9/16; max-height:420px; border-radius:8px; overflow:hidden; margin-bottom:10px; cursor:pointer; background:#000;" onclick="cargarVideoTestimonio('${idVideo}', this.dataset.embed)" data-embed="${t.video.embed.replace(/&/g, '&amp;').replace(/"/g, '&quot;')}">
+                            ${t.video.miniatura ? `<img src="${t.video.miniatura}" style="width:100%; height:100%; object-fit:cover; display:block;">` : `<div style="width:100%; height:100%;"></div>`}
+                            <div style="position:absolute; inset:0; background:rgba(0,0,0,0.25); display:flex; align-items:center; justify-content:center;">
+                                <div style="width:64px; height:64px; border-radius:50%; background:rgba(255,255,255,0.92); display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(0,0,0,0.35);">
+                                    <div style="width:0; height:0; border-top:13px solid transparent; border-bottom:13px solid transparent; border-left:20px solid #1a365d; margin-left:5px;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    ` : (t.fotoBase64 ? `<img src="${t.fotoBase64}" style="width:100%; border-radius:8px; margin-bottom:10px; cursor:pointer;" onclick="verComprobanteGrande('${t.fotoBase64}')">` : '')}
                     <p style="font-size:13px; line-height:1.5; margin-bottom:6px; font-style:italic;">"${t.texto}"</p>
                     <p style="font-size:12px; font-weight:700; color:#6c757d; margin:0;">— ${t.nombre}</p>
                 </div>
             `;
         }
 
-        function verMasCoaching() {
-            const loteT = coachingTransformacionesLista.slice(coachingOffsetT, coachingOffsetT + 6);
-            const loteTe = coachingTestimoniosLista.slice(coachingOffsetTe, coachingOffsetTe + 3);
-            coachingOffsetT += loteT.length;
-            coachingOffsetTe += loteTe.length;
+        // El reproductor (iframe) solo se crea cuando el cliente toca la portada — así no se cargan
+        // todos los videos del feed de una vez, nada más el que realmente quiere ver.
+        function cargarVideoTestimonio(idContenedor, embedUrl) {
+            const cont = document.getElementById(idContenedor);
+            if (!cont) return;
+            cont.innerHTML = `<iframe src="${embedUrl}" style="width:100%; height:100%; border:0;" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+            cont.onclick = null;
+        }
+
+        async function verMasCoaching() {
+            if (coachingCargandoMas) return;
+            coachingCargandoMas = true;
+            const btn = document.getElementById('coaching-ver-mas-btn');
+            if (btn) btn.disabled = true;
+
+            const [loteT, loteTe] = await Promise.all([
+                coachingSinMasT ? [] : traerLoteCoaching('coachingTransformaciones', coachingCursorT, COACHING_LOTE_TRANSFORMACIONES),
+                coachingSinMasTe ? [] : traerLoteCoaching('coachingTestimonios', coachingCursorTe, COACHING_LOTE_TESTIMONIOS)
+            ]);
+
+            if (loteT.length < COACHING_LOTE_TRANSFORMACIONES) coachingSinMasT = true;
+            if (loteT.length > 0) coachingCursorT = loteT[loteT.length - 1].key;
+            if (loteTe.length < COACHING_LOTE_TESTIMONIOS) coachingSinMasTe = true;
+            if (loteTe.length > 0) coachingCursorTe = loteTe[loteTe.length - 1].key;
 
             const feed = [];
             let it = 0, ite = 0;
             while (it < loteT.length || ite < loteTe.length) {
-                if (it < loteT.length) feed.push({ tipo: 'transformacion', data: loteT[it++] });
-                if (it < loteT.length) feed.push({ tipo: 'transformacion', data: loteT[it++] });
-                if (ite < loteTe.length) feed.push({ tipo: 'testimonio', data: loteTe[ite++] });
+                if (it < loteT.length) feed.push({ tipo: 'transformacion', data: loteT[it++].val });
+                if (it < loteT.length) feed.push({ tipo: 'transformacion', data: loteT[it++].val });
+                if (ite < loteTe.length) feed.push({ tipo: 'testimonio', data: loteTe[ite++].val });
             }
 
-            document.getElementById('coaching-feed').innerHTML += feed.map(renderItemCoachingFeed).join('');
+            if (feed.length > 0) {
+                document.getElementById('coaching-feed-wrap').style.display = 'block';
+                document.getElementById('coaching-feed').innerHTML += feed.map(renderItemCoachingFeed).join('');
+            }
 
-            const hayMas = coachingOffsetT < coachingTransformacionesLista.length || coachingOffsetTe < coachingTestimoniosLista.length;
-            document.getElementById('coaching-ver-mas-btn').style.display = hayMas ? 'block' : 'none';
+            coachingCargandoMas = false;
+            if (btn) btn.disabled = false;
+            const hayMas = !coachingSinMasT || !coachingSinMasTe;
+            if (btn) btn.style.display = hayMas ? 'block' : 'none';
         }
 
         function cerrarModalCoaching() {

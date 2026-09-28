@@ -1018,6 +1018,14 @@
                     <label style="display:block; font-size: 12px; font-weight:700; margin-bottom:4px;">Imagen (opcional)</label>
                     <input type="file" accept="image/*" id="testimonio-foto-input" onchange="previsualizarTestimonioFoto(event)" style="margin-bottom:8px;">
                     <div id="testimonio-foto-preview" style="margin-bottom:12px;"></div>
+                    <label style="display:block; font-size: 12px; font-weight:700; margin-bottom:4px;">Link de video (opcional — YouTube o Instagram)</label>
+                    <input type="text" id="testimonio-video-link" class="buscador" placeholder="https://youtube.com/... o https://instagram.com/reel/..." style="margin-bottom:8px;" oninput="revisarLinkTestimonioVideo()">
+                    <div id="testimonio-video-estado" style="font-size:11.5px; margin-bottom:8px;"></div>
+                    <div id="testimonio-video-portada-wrap" style="display:none; margin-bottom:8px;">
+                        <label style="display:block; font-size: 12px; font-weight:700; margin-bottom:4px;">Portada del video (obligatoria en Instagram — sube una captura)</label>
+                        <input type="file" accept="image/*" id="testimonio-video-portada-input" onchange="previsualizarPortadaVideoTestimonio(event)">
+                        <div id="testimonio-video-portada-preview" style="margin-top:6px;"></div>
+                    </div>
                     <button class="btn" style="background:#20c997; color:white; margin-bottom:16px;" onclick="agregarTestimonio()">➕ Agregar testimonio</button>
                     <div id="lista-testimonios"></div>
                 </div>
@@ -5964,6 +5972,62 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         }
 
         let testimonioFotoBase64Temp = null;
+        let testimonioPortadaVideoBase64Temp = null;
+
+        // A partir del link, identifica la plataforma y el id del video (para el reproductor incrustado)
+        function detectarVideoTestimonio(link) {
+            if (!link) return null;
+            const yt = link.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([\w-]{6,})/);
+            if (yt) return { plataforma: 'youtube', id: yt[1], embed: `https://www.youtube.com/embed/${yt[1]}?autoplay=1`, miniatura: `https://img.youtube.com/vi/${yt[1]}/hqdefault.jpg` };
+            const ig = link.match(/instagram\.com\/(?:reel|p|tv)\/([\w-]+)/);
+            if (ig) return { plataforma: 'instagram', id: ig[1], embed: `https://www.instagram.com/reel/${ig[1]}/embed`, miniatura: null };
+            return null;
+        }
+
+        function revisarLinkTestimonioVideo() {
+            const link = document.getElementById('testimonio-video-link').value.trim();
+            const estado = document.getElementById('testimonio-video-estado');
+            const portadaWrap = document.getElementById('testimonio-video-portada-wrap');
+            if (!link) { estado.textContent = ''; portadaWrap.style.display = 'none'; return; }
+            const v = detectarVideoTestimonio(link);
+            if (!v) {
+                estado.innerHTML = '⚠️ No reconozco ese link — usa uno de YouTube o de Instagram (reel/post)';
+                estado.style.color = '#dc3545';
+                portadaWrap.style.display = 'none';
+                return;
+            }
+            if (v.plataforma === 'youtube') {
+                estado.innerHTML = '✅ Video de YouTube — la portada se toma sola, no hace falta que subas nada';
+                estado.style.color = '#28a745';
+                portadaWrap.style.display = 'none';
+            } else {
+                estado.innerHTML = '✅ Video de Instagram — sube una captura de portada abajo (Instagram no deja tomarla sola)';
+                estado.style.color = '#d4870a';
+                portadaWrap.style.display = 'block';
+            }
+        }
+
+        function previsualizarPortadaVideoTestimonio(event) {
+            const archivo = event.target.files[0];
+            if (!archivo) return;
+            const lector = new FileReader();
+            lector.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const maxAncho = 700;
+                    const escala = Math.min(1, maxAncho / img.width);
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width * escala;
+                    canvas.height = img.height * escala;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    testimonioPortadaVideoBase64Temp = canvas.toDataURL('image/jpeg', 0.75);
+                    document.getElementById('testimonio-video-portada-preview').innerHTML = `<img src="${testimonioPortadaVideoBase64Temp}" style="width:100px; border-radius:8px;">`;
+                };
+                img.src = e.target.result;
+            };
+            lector.readAsDataURL(archivo);
+        }
 
         function previsualizarTestimonioFoto(event) {
             const archivo = event.target.files[0];
@@ -5994,11 +6058,24 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 alert('Escribe el nombre y el testimonio antes de agregarlo.');
                 return;
             }
-            db.ref('coachingTestimonios').push({ nombre, texto, fotoBase64: testimonioFotoBase64Temp || null, fecha: new Date().toISOString() }).then(() => {
+            const link = document.getElementById('testimonio-video-link').value.trim();
+            let video = null;
+            if (link) {
+                const v = detectarVideoTestimonio(link);
+                if (!v) { alert('El link de video no es de YouTube ni de Instagram. Corrígelo o bórralo antes de guardar.'); return; }
+                if (v.plataforma === 'instagram' && !testimonioPortadaVideoBase64Temp) { alert('Los videos de Instagram necesitan una portada — sube una captura.'); return; }
+                video = { plataforma: v.plataforma, embed: v.embed, miniatura: v.plataforma === 'youtube' ? v.miniatura : testimonioPortadaVideoBase64Temp };
+            }
+            db.ref('coachingTestimonios').push({ nombre, texto, fotoBase64: testimonioFotoBase64Temp || null, video, fecha: new Date().toISOString() }).then(() => {
                 document.getElementById('testimonio-nombre').value = '';
                 document.getElementById('testimonio-texto').value = '';
                 document.getElementById('testimonio-foto-preview').innerHTML = '';
+                document.getElementById('testimonio-video-link').value = '';
+                document.getElementById('testimonio-video-estado').textContent = '';
+                document.getElementById('testimonio-video-portada-wrap').style.display = 'none';
+                document.getElementById('testimonio-video-portada-preview').innerHTML = '';
                 testimonioFotoBase64Temp = null;
+                testimonioPortadaVideoBase64Temp = null;
                 mostrarNotif('💬 Testimonio agregado', 'success');
                 cargarTestimonios();
             });
@@ -6017,6 +6094,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                         <div style="display:flex; gap:10px; align-items:start;">
                             ${data[id].fotoBase64 ? `<img src="${data[id].fotoBase64}" style="width:44px; height:44px; object-fit:cover; border-radius:8px; flex-shrink:0;">` : ''}
                             <div>
+                                ${data[id].video ? `<span style="font-size:10.5px; font-weight:800; color:#dc3545; background:#fde8ea; border-radius:6px; padding:2px 6px;">🎬 ${data[id].video.plataforma === 'youtube' ? 'YouTube' : 'Instagram'}</span>` : ''}
                                 <p style="font-size:13px; font-style:italic; margin-bottom:6px;">"${data[id].texto}"</p>
                                 <p style="font-size:12px; font-weight:700; color:#6c757d; margin:0;">— ${data[id].nombre}</p>
                             </div>
