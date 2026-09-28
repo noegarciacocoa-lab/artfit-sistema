@@ -642,6 +642,68 @@
                 .filter(s => s.length > 0 && /[\p{L}\p{N}]/u.test(s));
         }
 
+        // ===== Stock por sabor (núcleo compartido) =====
+        // Un producto puede llevar su stock en "renglones": cada renglón tiene un código
+        // de barras (opcional), un sabor y una cantidad. Si no tiene renglones, el
+        // producto se comporta como siempre (cantidad simple).
+        function aArrayStock(x) {
+            if (!x) return [];
+            return Array.isArray(x) ? x.filter(v => v !== null && v !== undefined) : Object.values(x);
+        }
+
+        function normalizarSabor(s) {
+            return (s === null || s === undefined ? '' : String(s)).trim().toLowerCase();
+        }
+
+        // Regresa los renglones [{codigo, sabor, cantidad}] o null si el producto lleva stock simple.
+        function stockRenglonesDe(p) {
+            if (!p) return null;
+            if (p.controlStock === 'individual') {
+                return aArrayStock(p.codigosBarras).map(c => typeof c === 'string'
+                    ? { codigo: c, sabor: '', cantidad: 1 }
+                    : { codigo: (c && c.codigo) || '', sabor: (c && c.sabor) || '', cantidad: 1 });
+            }
+            const rows = aArrayStock(p.stockRenglones);
+            if (rows.length === 0) return null;
+            return rows.map(r => ({
+                codigo: (r && r.codigo) || '',
+                sabor: (r && r.sabor) || '',
+                cantidad: Math.max(0, parseInt(r && r.cantidad, 10) || 0)
+            }));
+        }
+
+        function saboresDeProducto(p) {
+            return dividirSabores(p ? p.sabores : '');
+        }
+
+        // Solo se lleva cuenta por sabor cuando al menos un renglón ya tiene sabor asignado.
+        function usaControlPorSabor(p) {
+            const rows = stockRenglonesDe(p);
+            return !!rows && rows.some(r => r.sabor);
+        }
+
+        // Piezas de un sabor (null si el producto no lleva renglones).
+        function cantidadDeSabor(p, sabor) {
+            const rows = stockRenglonesDe(p);
+            if (!rows) return null;
+            const obj = normalizarSabor(sabor);
+            return rows.filter(r => normalizarSabor(r.sabor) === obj).reduce((s, r) => s + r.cantidad, 0);
+        }
+
+        // Sabores que se pueden ofrecer ahora mismo (los agotados no se muestran).
+        function saboresDisponibles(p) {
+            const todos = saboresDeProducto(p);
+            if (!usaControlPorSabor(p)) return todos;
+            return todos.filter(s => cantidadDeSabor(p, s) > 0);
+        }
+
+        // ¿Tiene sentido mostrar el producto en la tienda en línea?
+        function disponibleEnTienda(p) {
+            if (!p.enStock) return false;
+            if (p.sabores && usaControlPorSabor(p) && saboresDisponibles(p).length === 0) return false;
+            return true;
+        }
+
         function generarNumeroOrden() {
             return db.ref('configuracion/contadorOrdenes').transaction(actual => (actual || 0) + 1);
         }
@@ -906,7 +968,7 @@
         db.ref('productos').on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) {
-                productos = Object.keys(data).map(key => ({ id: key, ...data[key] })).filter(p => p.enStock && !CATEGORIAS_EXCLUIDAS_MAYOREO.includes(p.categoria));
+                productos = Object.keys(data).map(key => ({ id: key, ...data[key] })).filter(p => disponibleEnTienda(p) && !CATEGORIAS_EXCLUIDAS_MAYOREO.includes(p.categoria));
             } else {
                 productos = [];
             }
@@ -1014,7 +1076,7 @@
                             ${(p.esMasVendido || p.masVendidoAuto) ? '<span class="tag vendido">🔥 MÁS VENDIDO</span>' : ''}
                         </div>` : ''}
                         ${p.sabores ? `<select class="sabor-select" id="sabor-${p.id}">
-                            ${dividirSabores(p.sabores).map(s => `<option value="${s}">${s}</option>`).join('')}
+                            ${saboresDisponibles(p).map(s => `<option value="${s}">${s}</option>`).join('')}
                         </select>` : ''}
                         <div class="precio-box">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -1134,7 +1196,7 @@
             const saboresHtml = p.sabores
                 ? `<div class="ficha-seccion">
                      <div class="ficha-seccion-titulo">Sabor</div>
-                     <select class="sabor-select" id="ficha-sabor">${dividirSabores(p.sabores).map(s => `<option value="${escapeHtmlFicha(s)}">${escapeHtmlFicha(s)}</option>`).join('')}</select>
+                     <select class="sabor-select" id="ficha-sabor">${saboresDisponibles(p).map(s => `<option value="${escapeHtmlFicha(s)}">${escapeHtmlFicha(s)}</option>`).join('')}</select>
                    </div>`
                 : '';
             const tallaColorHtml = (p.talla || p.color)

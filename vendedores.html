@@ -1284,6 +1284,15 @@
         </div>
     </div>
 
+    <div id="modal-selector-sabor" class="modal" style="z-index:2600;">
+        <div class="modal-content" onclick="event.stopPropagation()" style="max-width:420px;">
+            <h2 style="margin:0 0 4px; font-size:17px;">¿Qué sabor?</h2>
+            <div id="selector-sabor-titulo" style="font-size:13px; color:#6c757d; margin-bottom:14px;"></div>
+            <div id="selector-sabor-lista"></div>
+            <button type="button" class="btn" style="width:100%; background:white; color:#6c757d; border:2px solid #6c757d; margin-top:6px; justify-content:center;" onclick="document.getElementById('modal-selector-sabor').classList.remove('show')">Cancelar</button>
+        </div>
+    </div>
+
     <div id="modal-cobro-tienda" class="modal">
         <div class="modal-content" onclick="event.stopPropagation()" style="max-width:1180px; width:94vw; padding:0; overflow:hidden; display:flex; flex-direction:column; max-height:88vh;">
             <div style="flex-shrink:0; padding:16px 18px; background:#1a365d; display:flex; align-items:center; gap:12px;">
@@ -1309,12 +1318,13 @@
     </div>
 
     <div id="modal-form" class="modal">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <div style="position:sticky; top:0; z-index:5; background:white; margin:-30px -30px 14px; padding:24px 30px 14px; display:flex; justify-content:space-between; align-items:center;">
+        <div class="modal-content" onclick="event.stopPropagation()" style="display:flex; flex-direction:column; padding:0; overflow:hidden;">
+            <div style="flex:0 0 auto; background:white; padding:16px 24px 12px; border-bottom:1px solid #e9ecef; display:flex; justify-content:space-between; align-items:center;">
                 <h2 id="form-title" style="margin:0;">Nuevo Producto</h2>
                 <button type="button" aria-label="Cerrar" onclick="cerrarModal()" style="width:32px; height:32px; border-radius:999px; border:none; background:#e9ecef; color:#495057; font-size:14px; cursor:pointer; flex-shrink:0;">✕</button>
             </div>
-            <form id="producto-form" onsubmit="guardarProducto(event)">
+            <div id="modal-form-scroll" style="flex:1 1 auto; min-height:0; overflow-y:auto; padding:16px 24px 24px;">
+            <form id="producto-form" onsubmit="guardarProducto(event)" novalidate>
                 <div class="form-group">
                     <label>Nombre *</label>
                     <input type="text" id="nombre" required>
@@ -1341,7 +1351,7 @@
                 </div>
                 <div class="form-group">
                     <label>Sabores</label>
-                    <input type="text" id="sabores" placeholder="Ej: Chocolate, Vainilla">
+                    <input type="text" id="sabores" placeholder="Ej: Chocolate, Vainilla" oninput="refrescarSaboresFormulario()">
                     <div style="font-size:11px; color:#6c757d; margin-top:4px;">Solo para suplementos con más de un sabor — deja vacío si no aplica.</div>
                 </div>
                 <div id="grupo-talla-color" style="display:none;">
@@ -1394,21 +1404,34 @@
                     </div>
 
                     <div id="stock-modo-manual">
+                        <div id="stock-renglones-wrap">
+                            <div style="font-size:12px; color:#495057; margin-bottom:8px;">Agrega un renglón por cada código de barras (por ejemplo, un 12 pack de cada sabor). Puede haber varios renglones con el mismo sabor; el stock total se calcula solo.</div>
+                            <div id="lista-renglones-stock"></div>
+                            <button type="button" class="btn" style="background:#28a745; color:white; font-size:12.5px; padding:8px 14px;" onclick="agregarRenglonStock()">➕ Agregar código / sabor</button>
+                            <div id="stock-resumen-sabores" style="font-size:12px; font-weight:700; margin-top:8px;"></div>
+                        </div>
+                        <div id="stock-simple-wrap" style="margin-top:12px;">
+                        <div style="font-size:11px; color:#6c757d; margin-bottom:6px;">— o, si no vas a registrar códigos por sabor —</div>
                         <label style="font-size:12px; font-weight:600;">Cantidad en inventario</label>
                         <input type="number" id="cantidadStock" min="0" step="1" placeholder="Ej: 12" style="width:100%; padding:8px 10px; border-radius:8px; border:1.5px solid #e9ecef; font-size:13px; box-sizing:border-box;" oninput="sincronizarEnStockConCantidad()">
                         <div style="font-size:11px; color:#6c757d; margin:4px 0 10px;">Se descuenta solo con cada venta en tienda. Déjalo vacío si no quieres llevar el conteo exacto.</div>
                         <label style="font-size:12px; font-weight:600;">Código de barras (opcional, uno solo para todas las piezas)</label>
                         <input type="text" id="codigoBarras" placeholder="Escanea aquí con la pistola, o escribe a mano" style="width:100%; padding:8px 10px; border-radius:8px; border:1.5px solid #e9ecef; font-size:13px; box-sizing:border-box;">
+                        </div>
                     </div>
 
                     <div id="stock-modo-individual" style="display:none;">
                         <div style="font-size:12px; color:#495057; margin-bottom:8px;">Cada pieza trae su propio código de fábrica — escanéalas una por una. La cantidad en stock se cuenta sola.</div>
+                        <div id="fila-sabor-individual" style="display:none; margin-bottom:8px;">
+                            <label style="font-size:12px; font-weight:600;">Sabor de los siguientes códigos que escanees</label>
+                            <select id="sabor-codigos-siguientes" style="width:100%; padding:8px; border-radius:8px; border:1.5px solid #e9ecef; font-size:13px;"></select>
+                        </div>
                         <div style="display:flex; gap:6px; margin-bottom:8px;">
                             <input type="text" id="codigo-individual-nuevo" placeholder="Escanea o escribe un código y da Enter" style="flex:1; padding:8px 10px; border-radius:8px; border:1.5px solid #e9ecef; font-size:13px; box-sizing:border-box;" onkeydown="if(event.key==='Enter'){event.preventDefault(); agregarCodigoIndividual();}">
                             <button type="button" class="btn" style="background:#28a745; color:white; padding:8px 14px;" onclick="agregarCodigoIndividual()">➕</button>
                         </div>
-                        <div id="lista-codigos-individuales" style="max-height:160px; overflow-y:auto; border:1.5px solid #e9ecef; border-radius:8px; padding:6px; background:white;"></div>
-                        <div style="font-size:12px; font-weight:700; margin-top:6px;">Total en stock: <span id="codigos-individuales-total">0</span></div>
+                        <div id="lista-codigos-individuales" style="max-height:200px; overflow-y:auto; border:1.5px solid #e9ecef; border-radius:8px; padding:6px; background:white;"></div>
+                        <div id="resumen-codigos-individuales" style="font-size:12px; font-weight:700; margin-top:6px;">Total en stock: <span id="codigos-individuales-total">0</span></div>
                     </div>
                 </div>
                 <div class="form-group">
@@ -1464,6 +1487,7 @@
                     </button>
                 </div>
             </form>
+            </div>
         </div>
     </div>
 
@@ -2027,6 +2051,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             if (document.getElementById('vista-envios').style.display !== 'none') renderListaCPPersonalizados();
         });
 
+        let avisoConexionMostrado = false;
         db.ref('productos').on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) {
@@ -2037,7 +2062,10 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             actualizarUI();
             document.getElementById('loading').style.display = 'none';
             document.getElementById('app').style.display = 'block';
-            mostrarNotif('✅ Conectado a Firebase', 'success');
+            if (!avisoConexionMostrado) {
+                avisoConexionMostrado = true;
+                mostrarNotif('✅ Conectado a Firebase', 'success');
+            }
             ajustarAlturaHeaderSticky();
             actualizarBadgeCodigosBarras();
             if (!masVendidosCalculados) {
@@ -2223,7 +2251,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                             ${p.esNuevo ? '<span class="tag nuevo">✨ NUEVO</span>' : ''}
                             ${esProductoMasVendido(p) ? '<span class="tag vendido">🔥 MÁS VENDIDO</span>' : ''}
                         </div>` : ''}
-                        ${p.sabores ? `<p style="color: #17a2b8; font-size: 13px; margin: 5px 0;">${p.sabores}</p>` : ''}
+                        ${p.sabores ? `<p style="color: #17a2b8; font-size: 13px; margin: 5px 0;">${saboresParaMostrar(p, true)}</p>` : ''}
                         ${(p.talla || p.color) ? `<p style="color: #6610f2; font-size: 13px; margin: 5px 0; font-weight:600;">${[p.talla ? 'Talla: ' + p.talla : '', p.color ? 'Color: ' + p.color : ''].filter(Boolean).join(' · ')}</p>` : ''}
                         ${p.fechaCaducidad ? `<p style="color: #dc3545; font-size: 12px; margin: 5px 0; font-weight:600;">⏳ Caduca: ${p.fechaCaducidad}</p>` : ''}
                         ${p.requiereRefrigeracion ? `<p style="color: #17a2b8; font-size: 12px; margin: 5px 0; font-weight:600;">❄️ Requiere refrigeración</p>` : ''}
@@ -2265,6 +2293,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
 
         function mostrarFormulario() {
             document.getElementById('modal-form').classList.add('show');
+            document.getElementById('modal-form-scroll').scrollTop = 0;
         }
 
         function cerrarModal() {
@@ -2278,6 +2307,8 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             document.getElementById('ficha-tabla').style.borderColor = '#e9ecef';
             productoEditando = null;
             codigosIndividualesTemp = [];
+            renglonesStockTemp = [];
+            document.getElementById('form-title').textContent = 'Nuevo Producto';
             cambiarControlStock('manual');
         }
 
@@ -2355,9 +2386,31 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             }
         }
 
-        // ===== Control de stock: manual vs. por código individual =====
+        // ===== Control de stock: manual (renglones) vs. por código individual =====
         let controlStockActual = 'manual';
-        let codigosIndividualesTemp = [];
+        let codigosIndividualesTemp = [];   // [{codigo, sabor}]
+        let renglonesStockTemp = [];        // [{codigo, sabor, cantidad}]
+
+        function escaparAttr(s) {
+            return String(s === null || s === undefined ? '' : s)
+                .replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function saboresDelFormulario() {
+            return dividirSabores(document.getElementById('sabores').value);
+        }
+
+        function opcionesSaborHtml(seleccionado) {
+            const lista = saboresDelFormulario();
+            let html = '<option value="">(sin sabor)</option>';
+            lista.forEach(s => {
+                html += `<option value="${escaparAttr(s)}"${normalizarSabor(s) === normalizarSabor(seleccionado) ? ' selected' : ''}>${escaparAttr(s)}</option>`;
+            });
+            if (seleccionado && !lista.some(s => normalizarSabor(s) === normalizarSabor(seleccionado))) {
+                html += `<option value="${escaparAttr(seleccionado)}" selected>⚠️ ${escaparAttr(seleccionado)} (ya no está en la lista)</option>`;
+            }
+            return html;
+        }
 
         function cambiarControlStock(modo) {
             controlStockActual = modo;
@@ -2367,24 +2420,111 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             document.getElementById('btn-control-manual').style.color = modo === 'manual' ? 'white' : '#495057';
             document.getElementById('btn-control-individual').style.background = modo === 'individual' ? '#17a2b8' : '#e9ecef';
             document.getElementById('btn-control-individual').style.color = modo === 'individual' ? 'white' : '#495057';
+            refrescarSaboresFormulario();
         }
 
+        function refrescarSaboresFormulario() {
+            renderRenglonesStock();
+            renderListaCodigosIndividuales();
+        }
+
+        // ----- Modo manual: renglones (código, sabor, cantidad) -----
+        function renderRenglonesStock() {
+            const cont = document.getElementById('lista-renglones-stock');
+            if (!cont) return;
+            const hayLista = saboresDelFormulario().length > 0 || renglonesStockTemp.some(r => r.sabor);
+            cont.innerHTML = renglonesStockTemp.map((r, i) => `
+                <div style="background:white; border:1.5px solid #e9ecef; border-radius:8px; padding:8px; margin-bottom:6px;">
+                    <div style="display:flex; gap:6px; align-items:center; margin-bottom:6px;">
+                        <input type="text" value="${escaparAttr(r.codigo)}" placeholder="Código de barras (opcional)" oninput="actualizarRenglonStock(${i}, 'codigo', this.value)" style="flex:1; min-width:0; padding:8px 10px; border-radius:8px; border:1.5px solid #e9ecef; font-size:13px; font-family:monospace; box-sizing:border-box;">
+                        <button type="button" onclick="quitarRenglonStock(${i})" aria-label="Quitar renglón" style="background:none; border:none; color:#dc3545; cursor:pointer; font-size:16px; padding:0 4px;">✕</button>
+                    </div>
+                    <div style="display:flex; gap:6px; align-items:center;">
+                        ${hayLista ? `<select onchange="actualizarRenglonStock(${i}, 'sabor', this.value)" style="flex:1; min-width:0; padding:8px; border-radius:8px; border:1.5px solid #e9ecef; font-size:13px;">${opcionesSaborHtml(r.sabor)}</select>` : ''}
+                        <input type="number" min="0" step="1" value="${r.cantidad}" oninput="actualizarRenglonStock(${i}, 'cantidad', this.value)" aria-label="Cantidad" placeholder="Cant." style="width:${hayLista ? '80px' : '100%'}; padding:8px 10px; border-radius:8px; border:1.5px solid #e9ecef; font-size:13px; box-sizing:border-box;">
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('stock-simple-wrap').style.display = renglonesStockTemp.length > 0 ? 'none' : 'block';
+            actualizarResumenStock();
+        }
+
+        function agregarRenglonStock() {
+            if (renglonesStockTemp.length === 0) {
+                // Si ya había un código/cantidad simples escritos, pasan a ser el primer renglón.
+                const cod = document.getElementById('codigoBarras').value.trim();
+                const cantTxt = document.getElementById('cantidadStock').value;
+                if (cod || cantTxt !== '') {
+                    renglonesStockTemp.push({ codigo: cod, sabor: '', cantidad: parseInt(cantTxt, 10) || 0 });
+                    document.getElementById('codigoBarras').value = '';
+                    document.getElementById('cantidadStock').value = '';
+                }
+            }
+            renglonesStockTemp.push({ codigo: '', sabor: '', cantidad: 0 });
+            renderRenglonesStock();
+            const campos = document.querySelectorAll('#lista-renglones-stock input[type="text"]');
+            if (campos.length) campos[campos.length - 1].focus();
+        }
+
+        function actualizarRenglonStock(i, campo, valor) {
+            const r = renglonesStockTemp[i];
+            if (!r) return;
+            if (campo === 'cantidad') r.cantidad = Math.max(0, parseInt(valor, 10) || 0);
+            else r[campo] = valor;
+            actualizarResumenStock();
+        }
+
+        function quitarRenglonStock(i) {
+            renglonesStockTemp.splice(i, 1);
+            renderRenglonesStock();
+        }
+
+        function actualizarResumenStock() {
+            const cont = document.getElementById('stock-resumen-sabores');
+            if (!cont) return;
+            if (renglonesStockTemp.length === 0) { cont.innerHTML = ''; return; }
+            const total = renglonesStockTemp.reduce((s, r) => s + (parseInt(r.cantidad, 10) || 0), 0);
+            const controla = renglonesStockTemp.some(r => r.sabor);
+            let html = `Stock total: <span style="color:${total > 0 ? '#28a745' : '#dc3545'};">${total}</span>`;
+            if (controla) {
+                const porSabor = {};
+                const orden = [];
+                renglonesStockTemp.forEach(r => {
+                    const k = r.sabor || '(sin sabor)';
+                    if (!(k in porSabor)) { porSabor[k] = 0; orden.push(k); }
+                    porSabor[k] += parseInt(r.cantidad, 10) || 0;
+                });
+                html += ' · ' + orden.map(k => `${escaparAttr(k)}: <span style="color:${porSabor[k] > 0 ? '#28a745' : '#dc3545'};">${porSabor[k]}</span>`).join(' · ');
+            }
+            if (saboresDelFormulario().length > 0 && !controla) {
+                html += '<div style="font-weight:400; color:#a37700; margin-top:4px;">⚠️ Asigna un sabor a cada renglón para llevar el control por sabor.</div>';
+            } else if (controla && renglonesStockTemp.some(r => !r.sabor && (parseInt(r.cantidad, 10) || 0) > 0)) {
+                html += '<div style="font-weight:400; color:#a37700; margin-top:4px;">⚠️ Hay renglones con piezas y sin sabor: cuentan en el total, pero no se ofrecen como sabor disponible.</div>';
+            }
+            html += '<div style="font-weight:400; color:#6c757d; margin-top:4px;">Un sabor en 0 deja de mostrarse a los clientes y reaparece cuando registres piezas.</div>';
+            cont.innerHTML = html;
+            if (controlStockActual === 'manual') document.getElementById('enStock').checked = total > 0;
+        }
+
+        // ----- Modo por código individual: cada código lleva su sabor -----
         function agregarCodigoIndividual() {
             const input = document.getElementById('codigo-individual-nuevo');
             const codigo = input.value.trim();
             if (!codigo) return;
-            if (codigosIndividualesTemp.includes(codigo)) {
+            if (codigosIndividualesTemp.some(c => c.codigo === codigo)) {
                 mostrarNotif('⚠️ Ese código ya está en la lista', 'error');
                 input.value = '';
                 return;
             }
-            const otroProducto = productos.find(p => p.id !== productoEditando && p.controlStock === 'individual' && (p.codigosBarras || []).includes(codigo));
+            const otroProducto = productos.find(p => p.id !== productoEditando &&
+                (p.codigoBarras === codigo || (stockRenglonesDe(p) || []).some(r => r.codigo === codigo)));
             if (otroProducto) {
                 mostrarNotif(`⚠️ Ese código ya pertenece a "${otroProducto.nombre}"`, 'error');
                 input.value = '';
                 return;
             }
-            codigosIndividualesTemp.push(codigo);
+            const selector = document.getElementById('sabor-codigos-siguientes');
+            codigosIndividualesTemp.push({ codigo, sabor: selector ? selector.value : '' });
             input.value = '';
             input.focus();
             renderListaCodigosIndividuales();
@@ -2395,37 +2535,116 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             renderListaCodigosIndividuales();
         }
 
+        function cambiarSaborCodigoIndividual(index, valor) {
+            if (codigosIndividualesTemp[index]) codigosIndividualesTemp[index].sabor = valor;
+            actualizarResumenIndividual();
+        }
+
         function renderListaCodigosIndividuales() {
-            const cont = document.getElementById('lista-codigos-individuales');
-            cont.innerHTML = codigosIndividualesTemp.length === 0
+            const lista = document.getElementById('lista-codigos-individuales');
+            if (!lista) return;
+            const hayLista = saboresDelFormulario().length > 0 || codigosIndividualesTemp.some(c => c.sabor);
+            const fila = document.getElementById('fila-sabor-individual');
+            const selector = document.getElementById('sabor-codigos-siguientes');
+            const previo = selector ? selector.value : '';
+            if (fila) fila.style.display = hayLista ? 'block' : 'none';
+            if (selector) selector.innerHTML = opcionesSaborHtml(previo);
+            lista.innerHTML = codigosIndividualesTemp.length === 0
                 ? '<p style="font-size:12px; color:#adb5bd; margin:4px;">Todavía no has escaneado ningún código.</p>'
                 : codigosIndividualesTemp.map((c, i) => `
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 6px; font-size:12.5px; font-family:monospace; border-bottom:1px solid #f1f3f5;">
-                        <span>${c}</span>
-                        <button type="button" onclick="quitarCodigoIndividual(${i})" style="background:none; border:none; color:#dc3545; cursor:pointer; font-size:14px; padding:0 4px;">✕</button>
+                    <div style="display:flex; align-items:center; gap:6px; padding:4px 6px; font-size:12.5px; border-bottom:1px solid #f1f3f5;">
+                        <span style="font-family:monospace; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis;">${escaparAttr(c.codigo)}</span>
+                        ${hayLista ? `<select onchange="cambiarSaborCodigoIndividual(${i}, this.value)" style="max-width:48%; padding:4px; border-radius:6px; border:1.5px solid #e9ecef; font-size:12px;">${opcionesSaborHtml(c.sabor)}</select>` : ''}
+                        <button type="button" onclick="quitarCodigoIndividual(${i})" aria-label="Quitar código" style="background:none; border:none; color:#dc3545; cursor:pointer; font-size:14px; padding:0 4px;">✕</button>
                     </div>
                 `).join('');
-            document.getElementById('codigos-individuales-total').textContent = codigosIndividualesTemp.length;
+            actualizarResumenIndividual();
+        }
+
+        function actualizarResumenIndividual() {
+            const total = codigosIndividualesTemp.length;
+            document.getElementById('codigos-individuales-total').textContent = total;
+            const cont = document.getElementById('resumen-codigos-individuales');
+            const controla = codigosIndividualesTemp.some(c => c.sabor);
+            let extra = '';
+            if (controla) {
+                const porSabor = {};
+                const orden = [];
+                codigosIndividualesTemp.forEach(c => {
+                    const k = c.sabor || '(sin sabor)';
+                    if (!(k in porSabor)) { porSabor[k] = 0; orden.push(k); }
+                    porSabor[k]++;
+                });
+                extra = ' · ' + orden.map(k => `${escaparAttr(k)}: ${porSabor[k]}`).join(' · ');
+            } else if (saboresDelFormulario().length > 0 && total > 0) {
+                extra = '<div style="font-weight:400; color:#a37700; margin-top:4px;">⚠️ Asigna un sabor a los códigos para llevar el control por sabor.</div>';
+            }
+            cont.innerHTML = `Total en stock: <span id="codigos-individuales-total">${total}</span>${extra}`;
+            if (controlStockActual === 'individual') document.getElementById('enStock').checked = total > 0;
+        }
+
+        function avisoFormulario(mensaje, idCampo) {
+            mostrarNotif('⚠️ ' + mensaje, 'error');
+            const campo = document.getElementById(idCampo);
+            if (campo) {
+                campo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                campo.focus();
+            }
         }
 
         async function guardarProducto(e) {
             e.preventDefault();
 
+            const nombreProducto = document.getElementById('nombre').value.trim();
+            if (!nombreProducto) { avisoFormulario('Falta el nombre del producto', 'nombre'); return; }
+            const categoriaSeleccionada = document.getElementById('categoria').value;
+            if (!categoriaSeleccionada) { avisoFormulario('Falta elegir la categoría', 'categoria'); return; }
+
             // La tabla nutricional es obligatoria solo para categorías de suplementos
             // (es la clave que usa Orientación para detectar a quién recomendar el producto).
-            const categoriaSeleccionada = document.getElementById('categoria').value;
             const campoTabla = document.getElementById('ficha-tabla');
             const errorTabla = document.getElementById('error-ficha-tabla');
             const requiereTabla = !CATEGORIAS_EXCLUIDAS_ORIENTACION.includes(categoriaSeleccionada);
             if (requiereTabla && !campoTabla.value.trim()) {
                 errorTabla.style.display = 'block';
                 campoTabla.style.borderColor = '#dc3545';
-                campoTabla.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                campoTabla.focus();
+                avisoFormulario('Falta la tabla nutricional (es obligatoria en suplementos)', 'ficha-tabla');
                 return;
             }
             errorTabla.style.display = 'none';
             campoTabla.style.borderColor = '#e9ecef';
+
+            // Stock: renglones (manual), códigos individuales, o cantidad simple
+            let cantidadStock, codigoBarras, codigosBarras, stockRenglones, enStock;
+            if (controlStockActual === 'individual') {
+                const codigos = codigosIndividualesTemp.map(c => ({ codigo: c.codigo, sabor: c.sabor || '' }));
+                cantidadStock = codigos.length;
+                codigoBarras = null;
+                codigosBarras = codigos.length > 0 ? codigos : null;
+                stockRenglones = null;
+                enStock = codigos.length > 0;
+            } else {
+                const renglones = renglonesStockTemp
+                    .map(r => ({ codigo: (r.codigo || '').trim(), sabor: r.sabor || '', cantidad: Math.max(0, parseInt(r.cantidad, 10) || 0) }))
+                    .filter(r => r.codigo || r.sabor || r.cantidad > 0);
+                const usados = renglones.map(r => r.codigo).filter(c => c);
+                const repetido = usados.find((c, i) => usados.indexOf(c) !== i);
+                if (repetido) { mostrarNotif(`⚠️ El código ${repetido} está repetido en dos renglones`, 'error'); return; }
+                if (renglones.length > 0) {
+                    const total = renglones.reduce((s, r) => s + r.cantidad, 0);
+                    cantidadStock = total;
+                    codigoBarras = (renglones.find(r => r.codigo) || { codigo: '' }).codigo;
+                    codigosBarras = null;
+                    stockRenglones = renglones;
+                    enStock = total > 0;
+                } else {
+                    cantidadStock = document.getElementById('cantidadStock').value === '' ? null : parseInt(document.getElementById('cantidadStock').value, 10);
+                    codigoBarras = document.getElementById('codigoBarras').value.trim();
+                    codigosBarras = null;
+                    stockRenglones = null;
+                    enStock = document.getElementById('enStock').checked;
+                }
+            }
 
             // Si estamos editando, partimos del producto tal como está guardado ahora mismo
             // (para no perder campos que este formulario no controla, como notas internas de la ficha)
@@ -2436,9 +2655,9 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             const producto = {
                 ...base,
                 id: productoEditando || Date.now().toString(),
-                nombre: document.getElementById('nombre').value,
+                nombre: nombreProducto,
                 foto: imagenBase64,
-                categoria: document.getElementById('categoria').value,
+                categoria: categoriaSeleccionada,
                 sabores: document.getElementById('sabores').value,
                 talla: document.getElementById('talla').value.trim(),
                 color: document.getElementById('color').value.trim(),
@@ -2447,13 +2666,12 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 precioAdquisicion: parseFloat(document.getElementById('precioAdquisicion').value) || 0,
                 precioMayoreo: parseFloat(document.getElementById('precioMayoreo').value) || 0,
                 precioPublico: parseFloat(document.getElementById('precioPublico').value) || 0,
-                enStock: document.getElementById('enStock').checked,
+                enStock,
                 controlStock: controlStockActual,
-                cantidadStock: controlStockActual === 'individual'
-                    ? codigosIndividualesTemp.length
-                    : (document.getElementById('cantidadStock').value === '' ? null : parseInt(document.getElementById('cantidadStock').value, 10)),
-                codigoBarras: controlStockActual === 'individual' ? null : document.getElementById('codigoBarras').value.trim(),
-                codigosBarras: controlStockActual === 'individual' ? codigosIndividualesTemp.slice() : null,
+                cantidadStock,
+                codigoBarras,
+                codigosBarras,
+                stockRenglones,
                 esOferta: document.getElementById('esOferta').checked,
                 esNuevo: document.getElementById('esNuevo').checked,
                 esMasVendido: document.getElementById('esMasVendido').checked,
@@ -2463,23 +2681,26 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 tablaNutricionalFoto: tablaFotoBase64,
                 modoUso: document.getElementById('ficha-modouso').value
             };
-            if (controlStockActual === 'individual') {
-                producto.enStock = codigosIndividualesTemp.length > 0;
-            }
 
+            // Se cierra el formulario y se avisa de inmediato; si el servidor rechazara el
+            // guardado, sale un aviso rojo con el motivo.
+            const eraEdicion = !!productoEditando;
+            let guardado;
             try {
-                await db.ref(`productos/${producto.id}`).set(producto);
-                mostrarNotif(productoEditando ? '✅ Actualizado' : '✅ Agregado', 'success');
-                cerrarModal();
+                guardado = db.ref(`productos/${producto.id}`).set(producto);
             } catch (error) {
-                mostrarNotif('❌ Error: ' + error.message, 'error');
+                mostrarNotif('❌ No se pudo guardar: ' + error.message, 'error');
+                return;
             }
+            mostrarNotif(eraEdicion ? '✅ Actualizado' : '✅ Agregado', 'success');
+            cerrarModal();
+            guardado.catch(error => mostrarNotif(`❌ No se pudo guardar "${producto.nombre}": ${error.message}`, 'error'));
         }
 
         function editarProducto(id) {
             const p = productos.find(x => x.id === id);
             if (!p) return;
-            
+
             productoEditando = p.id;
             document.getElementById('nombre').value = p.nombre;
             document.getElementById('categoria').value = p.categoria;
@@ -2493,17 +2714,19 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             document.getElementById('precioMayoreo').value = p.precioMayoreo;
             document.getElementById('precioPublico').value = p.precioPublico;
             document.getElementById('enStock').checked = p.enStock;
+            const renglonesGuardados = stockRenglonesDe(p);
             if (p.controlStock === 'individual') {
-                cambiarControlStock('individual');
-                codigosIndividualesTemp = (p.codigosBarras || []).slice();
-                renderListaCodigosIndividuales();
+                codigosIndividualesTemp = (renglonesGuardados || []).map(r => ({ codigo: r.codigo, sabor: r.sabor }));
+                renglonesStockTemp = [];
                 document.getElementById('cantidadStock').value = '';
                 document.getElementById('codigoBarras').value = '';
+                cambiarControlStock('individual');
             } else {
-                cambiarControlStock('manual');
                 codigosIndividualesTemp = [];
-                document.getElementById('cantidadStock').value = (p.cantidadStock === null || p.cantidadStock === undefined) ? '' : p.cantidadStock;
-                document.getElementById('codigoBarras').value = p.codigoBarras || '';
+                renglonesStockTemp = renglonesGuardados ? renglonesGuardados.map(r => ({ codigo: r.codigo, sabor: r.sabor, cantidad: r.cantidad })) : [];
+                document.getElementById('cantidadStock').value = (renglonesGuardados || p.cantidadStock === null || p.cantidadStock === undefined) ? '' : p.cantidadStock;
+                document.getElementById('codigoBarras').value = renglonesGuardados ? '' : (p.codigoBarras || '');
+                cambiarControlStock('manual');
             }
             document.getElementById('esOferta').checked = !!p.esOferta;
             document.getElementById('esNuevo').checked = !!p.esNuevo;
@@ -2519,13 +2742,13 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 document.getElementById('ficha-tabla-foto-preview').style.display = 'block';
                 document.getElementById('ficha-tabla-foto-quitar').style.display = 'block';
             }
-            
+
             if (p.foto) {
                 imagenBase64 = p.foto;
                 document.getElementById('preview').src = p.foto;
                 document.getElementById('preview').style.display = 'block';
             }
-            
+
             document.getElementById('form-title').textContent = 'Editar Producto';
             mostrarFormulario();
         }
@@ -3226,8 +3449,214 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             renderCobroTienda();
         }
 
-        function stockDisponible(producto) {
+        // Separa el texto de sabores igual que la tienda en línea (coma o emoji marcan un sabor nuevo).
+        function dividirSabores(texto) {
+            if (!texto) return [];
+            const emojiRun = /\p{Extended_Pictographic}+/gu;
+            let marcado = texto.replace(emojiRun, (match, offset, str) => {
+                const antes = str.slice(0, offset).trimEnd();
+                return (antes.length === 0) ? match : '|||' + match;
+            });
+            marcado = marcado.replace(/,/g, '|||');
+            return marcado.split('|||')
+                .map(s => s.trim())
+                .filter(s => s.length > 0 && /[\p{L}\p{N}]/u.test(s));
+        }
+
+        // ===== Stock por sabor (núcleo compartido) =====
+        // Un producto puede llevar su stock en "renglones": cada renglón tiene un código
+        // de barras (opcional), un sabor y una cantidad. Si no tiene renglones, el
+        // producto se comporta como siempre (cantidad simple).
+        function aArrayStock(x) {
+            if (!x) return [];
+            return Array.isArray(x) ? x.filter(v => v !== null && v !== undefined) : Object.values(x);
+        }
+
+        function normalizarSabor(s) {
+            return (s === null || s === undefined ? '' : String(s)).trim().toLowerCase();
+        }
+
+        // Regresa los renglones [{codigo, sabor, cantidad}] o null si el producto lleva stock simple.
+        function stockRenglonesDe(p) {
+            if (!p) return null;
+            if (p.controlStock === 'individual') {
+                return aArrayStock(p.codigosBarras).map(c => typeof c === 'string'
+                    ? { codigo: c, sabor: '', cantidad: 1 }
+                    : { codigo: (c && c.codigo) || '', sabor: (c && c.sabor) || '', cantidad: 1 });
+            }
+            const rows = aArrayStock(p.stockRenglones);
+            if (rows.length === 0) return null;
+            return rows.map(r => ({
+                codigo: (r && r.codigo) || '',
+                sabor: (r && r.sabor) || '',
+                cantidad: Math.max(0, parseInt(r && r.cantidad, 10) || 0)
+            }));
+        }
+
+        function saboresDeProducto(p) {
+            return dividirSabores(p ? p.sabores : '');
+        }
+
+        // Solo se lleva cuenta por sabor cuando al menos un renglón ya tiene sabor asignado.
+        function usaControlPorSabor(p) {
+            const rows = stockRenglonesDe(p);
+            return !!rows && rows.some(r => r.sabor);
+        }
+
+        // Piezas de un sabor (null si el producto no lleva renglones).
+        function cantidadDeSabor(p, sabor) {
+            const rows = stockRenglonesDe(p);
+            if (!rows) return null;
+            const obj = normalizarSabor(sabor);
+            return rows.filter(r => normalizarSabor(r.sabor) === obj).reduce((s, r) => s + r.cantidad, 0);
+        }
+
+        // Sabores que se pueden ofrecer ahora mismo (los agotados no se muestran).
+        function saboresDisponibles(p) {
+            const todos = saboresDeProducto(p);
+            if (!usaControlPorSabor(p)) return todos;
+            return todos.filter(s => cantidadDeSabor(p, s) > 0);
+        }
+
+        // ¿Tiene sentido mostrar el producto en la tienda en línea?
+        function disponibleEnTienda(p) {
+            if (!p.enStock) return false;
+            if (p.sabores && usaControlPorSabor(p) && saboresDisponibles(p).length === 0) return false;
+            return true;
+        }
+
+        // ===== Stock por sabor (solo panel de vendedores) =====
+        function totalDeRenglones(rows) {
+            return rows.reduce((s, r) => s + r.cantidad, 0);
+        }
+
+        // Piezas disponibles del producto (y del sabor, cuando se lleva cuenta por sabor).
+        function stockDisponible(producto, sabor) {
+            const rows = stockRenglonesDe(producto);
+            if (rows) {
+                if (usaControlPorSabor(producto)) return cantidadDeSabor(producto, sabor || '');
+                return totalDeRenglones(rows);
+            }
             return (producto.cantidadStock === null || producto.cantidadStock === undefined) ? Infinity : producto.cantidadStock;
+        }
+
+        // Calcula cómo queda el stock después de descontar `cantidad` piezas.
+        // Regresa { patch, faltante, saborNoEncontrado }. `patch` es lo que se guarda en
+        // Firebase (null si el producto no lleva conteo). Nunca deja cantidades negativas.
+        function calcularDescuentoStock(p, sabor, cantidad, codigoPreferido) {
+            const rows = stockRenglonesDe(p);
+            if (!rows) {
+                if (p.cantidadStock === null || p.cantidadStock === undefined) {
+                    return { patch: null, faltante: 0, saborNoEncontrado: false };
+                }
+                const nuevo = Math.max(0, p.cantidadStock - cantidad);
+                return { patch: { cantidadStock: nuevo, enStock: nuevo > 0 }, faltante: Math.max(0, cantidad - p.cantidadStock), saborNoEncontrado: false };
+            }
+
+            const nuevas = rows.map(r => ({ ...r }));
+            const obj = normalizarSabor(sabor);
+            let candidatos = nuevas;
+            let saborNoEncontrado = false;
+            if (usaControlPorSabor(p) && obj !== '') {
+                const coinciden = nuevas.filter(r => normalizarSabor(r.sabor) === obj);
+                if (coinciden.length > 0) candidatos = coinciden;
+                else saborNoEncontrado = true;   // el sabor ya no existe en los renglones: se descuenta del primero con piezas
+            } else if (usaControlPorSabor(p) && obj === '') {
+                const sinSabor = nuevas.filter(r => normalizarSabor(r.sabor) === '');
+                if (sinSabor.length > 0) candidatos = sinSabor;
+            }
+            const preferidos = codigoPreferido ? candidatos.filter(r => r.codigo === codigoPreferido) : [];
+            const ordenados = [...preferidos, ...candidatos.filter(r => !preferidos.includes(r))];
+
+            let restante = cantidad;
+            for (const r of ordenados) {
+                if (restante <= 0) break;
+                const tomar = Math.min(r.cantidad, restante);
+                r.cantidad -= tomar;
+                restante -= tomar;
+            }
+
+            let patch;
+            if (p.controlStock === 'individual') {
+                const quedan = nuevas.filter(r => r.cantidad > 0).map(r => ({ codigo: r.codigo, sabor: r.sabor }));
+                patch = { codigosBarras: quedan, cantidadStock: quedan.length, enStock: quedan.length > 0 };
+            } else {
+                const total = totalDeRenglones(nuevas);
+                patch = {
+                    stockRenglones: nuevas.map(r => ({ codigo: r.codigo, sabor: r.sabor, cantidad: r.cantidad })),
+                    cantidadStock: total,
+                    enStock: total > 0
+                };
+            }
+            return { patch, faltante: restante, saborNoEncontrado };
+        }
+
+        // Calcula y lanza el descuento sin esperar al servidor; deja la copia local del producto al
+        // día al instante (así varias líneas del mismo producto se descuentan bien una tras otra).
+        function descontarStockSinEsperar(p, sabor, cantidad, codigoPreferido) {
+            const r = calcularDescuentoStock(p, sabor, cantidad, codigoPreferido);
+            let promesa = Promise.resolve();
+            if (r.patch) {
+                promesa = db.ref('productos/' + p.id).update(r.patch);
+                Object.assign(p, r.patch);
+            }
+            return { r, promesa };
+        }
+
+        // Igual que la anterior, pero espera a que el servidor confirme.
+        async function aplicarDescuentoStock(p, sabor, cantidad, codigoPreferido) {
+            const { r, promesa } = descontarStockSinEsperar(p, sabor, cantidad, codigoPreferido);
+            await promesa;
+            return r;
+        }
+
+        // Busca un producto por cualquiera de sus códigos y regresa también el sabor de ese código.
+        function buscarProductoPorCodigo(codigo) {
+            for (const p of productos) {
+                const rows = stockRenglonesDe(p);
+                if (rows) {
+                    const fila = rows.find(r => r.codigo && r.codigo === codigo);
+                    if (fila) return { producto: p, sabor: fila.sabor, codigo };
+                }
+                // Código general del producto: si lleva renglones no dice el sabor (sabor: null => hay que preguntar)
+                if (p.codigoBarras && p.codigoBarras === codigo) return { producto: p, sabor: rows ? null : '', codigo };
+            }
+            return null;
+        }
+
+        // ¿El producto ya tiene algún código de barras registrado?
+        function productoTieneCodigo(p) {
+            if (p.codigoBarras) return true;
+            const rows = stockRenglonesDe(p);
+            return !!rows && rows.some(r => r.codigo);
+        }
+
+        // Opciones de sabor que se pueden vender ahora: [{sabor, disponible}] (vacío si no hay que elegir).
+        function opcionesSaborDe(producto) {
+            if (!usaControlPorSabor(producto)) return [];
+            const rows = stockRenglonesDe(producto);
+            const vistos = new Set();
+            const opciones = [];
+            rows.forEach(r => {
+                const k = normalizarSabor(r.sabor);
+                if (r.cantidad > 0 && !vistos.has(k)) {
+                    vistos.add(k);
+                    opciones.push({ sabor: r.sabor, disponible: cantidadDeSabor(producto, r.sabor) });
+                }
+            });
+            return opciones;
+        }
+
+        function nombreConSabor(nombre, sabor) {
+            return sabor ? `${nombre} — ${sabor}` : nombre;
+        }
+
+        // Texto de sabores para mostrar: si se lleva cuenta por sabor, solo los que tienen piezas.
+        function saboresParaMostrar(p, conCantidad) {
+            if (!usaControlPorSabor(p)) return p.sabores || '';
+            const disp = saboresDisponibles(p);
+            if (disp.length === 0) return 'Sin sabores disponibles';
+            return disp.map(s => conCantidad ? `${s} (${cantidadDeSabor(p, s)})` : s).join(', ');
         }
 
         function procesarEscaneoTienda(event) {
@@ -3236,32 +3665,64 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             const codigo = campo.value.trim();
             campo.value = '';
             if (!codigo) return;
-            const producto = productos.find(p =>
-                (p.codigoBarras && p.codigoBarras === codigo) ||
-                (p.controlStock === 'individual' && (p.codigosBarras || []).includes(codigo))
-            );
-            if (!producto) {
+            const hallado = buscarProductoPorCodigo(codigo);
+            if (!hallado) {
                 mostrarNotif('⚠️ Código no encontrado — búscalo a mano abajo', 'error');
                 renderCobroTienda();
                 return;
             }
-            agregarACarritoTienda(producto.id);
+            if (hallado.sabor === null) iniciarAgregarATienda(hallado.producto.id, hallado.codigo);
+            else agregarACarritoTienda(hallado.producto.id, hallado.sabor, hallado.codigo);
         }
 
-        function agregarACarritoTienda(productoId) {
+        // Cuando se agrega a mano un producto con varios sabores con piezas, se pregunta cuál.
+        let selectorSaborOpciones = [];
+        let selectorSaborProductoId = null;
+        let selectorSaborCodigo = '';
+
+        function iniciarAgregarATienda(productoId, codigoEscaneado) {
             const producto = productos.find(p => p.id === productoId);
             if (!producto) return;
-            const disponible = stockDisponible(producto);
-            const existente = carritoTienda.find(x => x.id === productoId);
+            const opciones = opcionesSaborDe(producto);
+            if (opciones.length <= 1) {
+                agregarACarritoTienda(productoId, opciones.length === 1 ? opciones[0].sabor : '', codigoEscaneado || '');
+                return;
+            }
+            selectorSaborOpciones = opciones;
+            selectorSaborProductoId = productoId;
+            selectorSaborCodigo = codigoEscaneado || '';
+            document.getElementById('selector-sabor-titulo').textContent = producto.nombre;
+            document.getElementById('selector-sabor-lista').innerHTML = opciones.map((o, i) => `
+                <button type="button" onclick="elegirSaborTienda(${i})" style="width:100%; text-align:left; background:#ffffff; border:1.5px solid #17a2b8; color:#17242b; border-radius:10px; padding:14px; margin-bottom:8px; font-size:15px; font-weight:700; cursor:pointer; display:flex; justify-content:space-between; gap:10px;">
+                    <span>${o.sabor || 'Sin sabor asignado'}</span>
+                    <span style="color:#28a745; font-weight:800;">${o.disponible} disp.</span>
+                </button>
+            `).join('');
+            document.getElementById('modal-selector-sabor').classList.add('show');
+        }
+
+        function elegirSaborTienda(indice) {
+            const opcion = selectorSaborOpciones[indice];
+            document.getElementById('modal-selector-sabor').classList.remove('show');
+            if (opcion && selectorSaborProductoId) agregarACarritoTienda(selectorSaborProductoId, opcion.sabor, selectorSaborCodigo);
+        }
+
+        function agregarACarritoTienda(productoId, sabor, codigo) {
+            const producto = productos.find(p => p.id === productoId);
+            if (!producto) return;
+            sabor = sabor || '';
+            const disponible = stockDisponible(producto, sabor);
+            const existente = carritoTienda.find(x => x.id === productoId && !x.esPaqueteVIP && (x.sabor || '') === sabor);
             const cantidadActual = existente ? existente.cantidad : 0;
             if (cantidadActual + 1 > disponible) {
-                mostrarNotif(`⚠️ Solo quedan ${disponible} en inventario`, 'error');
+                mostrarNotif(`⚠️ Solo quedan ${disponible} en inventario${sabor ? ' de ' + sabor : ''}`, 'error');
                 return;
             }
             if (existente) {
                 existente.cantidad++;
+                if (codigo) existente.codigo = codigo;
             } else {
-                carritoTienda.push({ id: producto.id, nombre: producto.nombre, precioPublico: producto.precioPublico, cantidad: 1 });
+                carritoTienda.push({ id: producto.id, nombre: producto.nombre, precioPublico: producto.precioPublico, cantidad: 1, sabor, codigo: codigo || '' });
             }
             renderCobroTienda();
         }
@@ -3270,10 +3731,10 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             const item = carritoTienda[index];
             if (!item) return;
             const producto = productos.find(p => p.id === item.id);
-            const disponible = producto ? stockDisponible(producto) : Infinity;
+            const disponible = producto ? stockDisponible(producto, item.sabor || '') : Infinity;
             const nuevaCantidad = item.cantidad + delta;
             if (nuevaCantidad > disponible) {
-                mostrarNotif(`⚠️ Solo quedan ${disponible} en inventario`, 'error');
+                mostrarNotif(`⚠️ Solo quedan ${disponible} en inventario${item.sabor ? ' de ' + item.sabor : ''}`, 'error');
                 return;
             }
             if (nuevaCantidad <= 0) {
@@ -3290,9 +3751,9 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             let nuevaCantidad = parseInt(valor, 10);
             if (isNaN(nuevaCantidad) || nuevaCantidad < 1) nuevaCantidad = 1;
             const producto = productos.find(p => p.id === item.id);
-            const disponible = producto ? stockDisponible(producto) : Infinity;
+            const disponible = producto ? stockDisponible(producto, item.sabor || '') : Infinity;
             if (nuevaCantidad > disponible) {
-                mostrarNotif(`⚠️ Solo quedan ${disponible} en inventario`, 'error');
+                mostrarNotif(`⚠️ Solo quedan ${disponible} en inventario${item.sabor ? ' de ' + item.sabor : ''}`, 'error');
                 nuevaCantidad = disponible;
             }
             item.cantidad = nuevaCantidad;
@@ -3391,6 +3852,15 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         function toggleListaPaquetesTienda() {
             mostrarListaPaquetesTienda = !mostrarListaPaquetesTienda;
             renderCobroTienda();
+        }
+
+        // Precio de un paquete VIP: precio fijo, o la suma de sus productos con un % de descuento.
+        function calcularPrecioPaquete(paquete) {
+            const sumaProductos = (paquete.items || [])
+                .filter(i => i.tipo === 'producto')
+                .reduce((sum, i) => sum + i.precioPublico, 0);
+            if (paquete.tipoPrecio === 'fijo') return paquete.valor;
+            return sumaProductos * (1 - paquete.valor / 100);
         }
 
         function seleccionarPaqueteTienda(paqueteId) {
@@ -3660,7 +4130,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                     htmlPrincipal += `
                         <div style="background:#ffffff; border:1px solid #eef1f1; border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:12px;">
                             <div style="display:flex; justify-content:space-between; gap:8px;">
-                                <div style="font-weight:700; font-size:13.5px; color:#17242b;">${item.nombre}</div>
+                                <div style="font-weight:700; font-size:13.5px; color:#17242b;">${item.nombre}${item.sabor ? ` <span style="color:#17a2b8;">— ${item.sabor}</span>` : ''}</div>
                                 <div style="font-weight:800; font-size:13.5px; color:#17242b; white-space:nowrap;">$${(item.precioPublico * item.cantidad).toFixed(2)}</div>
                             </div>
                             <div style="display:flex; align-items:center; justify-content:space-between;">
@@ -3791,7 +4261,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 return;
             }
             cont.innerHTML = coincidencias.map(p => `
-                <div onclick="agregarACarritoTienda('${p.id}'); document.getElementById('cobro-busqueda-input').value=''; document.getElementById('cobro-resultados-busqueda').innerHTML='';" style="padding:8px 10px; border-radius:8px; cursor:pointer; font-size:13px; border-bottom:1px solid #f1f3f5;">
+                <div onclick="iniciarAgregarATienda('${p.id}'); document.getElementById('cobro-busqueda-input').value=''; document.getElementById('cobro-resultados-busqueda').innerHTML='';" style="padding:8px 10px; border-radius:8px; cursor:pointer; font-size:13px; border-bottom:1px solid #f1f3f5;">
                     <strong>${p.nombre}</strong> — $${p.precioPublico.toFixed(2)}
                 </div>
             `).join('');
@@ -3823,13 +4293,10 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 if (item.esPaqueteVIP) continue;
                 const producto = productos.find(p => p.id === item.id);
                 if (producto) {
-                    if (producto.cantidadStock !== null && producto.cantidadStock !== undefined) {
-                        const nuevoStock = Math.max(0, producto.cantidadStock - item.cantidad);
-                        await db.ref('productos/' + producto.id).update({ cantidadStock: nuevoStock, enStock: nuevoStock > 0 });
-                    }
+                    await aplicarDescuentoStock(producto, item.sabor || '', item.cantidad, item.codigo || '');
                     costoTotal += (producto.precioAdquisicion || 0) * item.cantidad;
                 }
-                detalleItems.push(`${item.nombre} x${item.cantidad}`);
+                detalleItems.push(`${nombreConSabor(item.nombre, item.sabor)} x${item.cantidad}`);
             }
 
             const hoy = new Date().toISOString().slice(0, 10);
@@ -3871,25 +4338,13 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             try {
                 // Descontar inventario de cada producto vendido
                 for (const item of carritoTienda) {
+                    if (item.esPaqueteVIP) continue;
                     const producto = productos.find(p => p.id === item.id);
                     if (!producto) continue;
-                    if (producto.controlStock === 'individual') {
-                        const codigosRestantes = (producto.codigosBarras || []).slice(item.cantidad);
-                        await db.ref(`productos/${item.id}`).update({
-                            codigosBarras: codigosRestantes,
-                            cantidadStock: codigosRestantes.length,
-                            enStock: codigosRestantes.length > 0
-                        });
-                    } else if (producto.cantidadStock !== null && producto.cantidadStock !== undefined) {
-                        const nuevaCantidad = Math.max(0, producto.cantidadStock - item.cantidad);
-                        await db.ref(`productos/${item.id}`).update({
-                            cantidadStock: nuevaCantidad,
-                            enStock: nuevaCantidad > 0
-                        });
-                    }
+                    await aplicarDescuentoStock(producto, item.sabor || '', item.cantidad, item.codigo || '');
                 }
 
-                const itemsVenta = carritoTienda.map(i => ({ productoId: i.id, nombre: i.nombre, saborElegido: '', precioPublico: i.precioPublico, cantidad: i.cantidad }));
+                const itemsVenta = carritoTienda.map(i => ({ productoId: i.id, nombre: i.nombre, saborElegido: i.sabor || '', precioPublico: i.precioPublico, cantidad: i.cantidad }));
                 const ganancia = calcularGananciaPedido({ items: itemsVenta }) - descuento;
 
                 const numeroOrdenResultado = await generarNumeroOrden();
@@ -3968,7 +4423,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                         ${v.clienteNombre === 'Cliente sin cuenta' ? 'Cliente sin cuenta' : `${v.esVIPAlMomento ? '👑 ' : ''}${v.clienteNombre}${v.esVIPAlMomento ? ' — Cliente VIP' : ''}`}
                     </div>
                     <div style="border-top:1px dashed #ced4da; padding-top:8px;">
-                        ${v.items.map(i => `<div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>${i.cantidad}x ${i.nombre}</span><span>$${(i.precioPublico * i.cantidad).toFixed(2)}</span></div>`).join('')}
+                        ${v.items.map(i => `<div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>${i.cantidad}x ${i.nombre}${i.saborElegido ? ' (' + i.saborElegido + ')' : ''}</span><span>$${(i.precioPublico * i.cantidad).toFixed(2)}</span></div>`).join('')}
                     </div>
                     <div style="border-top:1px dashed #ced4da; margin-top:8px; padding-top:8px;">
                         ${v.descuentoAplicado ? `
@@ -4203,7 +4658,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 '',
                 p.nombre || '—',
                 p.categoria || '—',
-                p.sabores || '—',
+                saboresParaMostrar(p, false) || '—',
                 '$' + (p.precioAdquisicion || 0).toFixed(2),
                 '$' + (p.precioMayoreo || 0).toFixed(2),
                 '$' + (p.precioPublico || 0).toFixed(2)
@@ -5398,6 +5853,25 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         let sucursalesCache = [];
         let sucursalActualId = null;
         let sucursalActualStock = {};
+
+        // El stock de la sucursal se guarda por producto y sabor: "idProducto::sabor".
+        // Los registros anteriores (solo "idProducto") se leen como "sin sabor".
+        function claveStockSucursal(pid, sabor) {
+            if (!sabor) return pid;
+            return pid + '::' + encodeURIComponent(sabor).replace(/\./g, '%2E').replace(/'/g, '%27');
+        }
+
+        function separarClaveStock(clave) {
+            const i = clave.indexOf('::');
+            if (i === -1) return { pid: clave, sabor: '' };
+            return { pid: clave.slice(0, i), sabor: decodeURIComponent(clave.slice(i + 2)) };
+        }
+
+        function nombreDeClaveStock(clave) {
+            const { pid, sabor } = separarClaveStock(clave);
+            const p = productos.find(x => x.id === pid);
+            return nombreConSabor(p ? p.nombre : '(producto eliminado)', sabor);
+        }
         let sucursalEnvioSeleccion = {};
         let sucursalVentaSeleccion = {};
         const DIAS_AVISO_SUCURSAL = 30;
@@ -5533,12 +6007,11 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 `)}
 
                 ${seccionDesplegable('sucursal-venta', '💰 Registrar venta reportada', 'Ajusta lo que ya vendió', itemsStock.length === 0 ? '<p style="font-size:12.5px; color:#adb5bd;">No tiene productos en existencia para vender.</p>' : `
-                    <div id="sucursal-venta-lista">${itemsStock.map(([pid, cant]) => {
-                        const p = productos.find(x => x.id === pid);
-                        const nombre = p ? p.nombre : '(producto eliminado)';
+                    <div id="sucursal-venta-lista">${itemsStock.map(([clave, cant]) => {
+                        const nombre = nombreDeClaveStock(clave);
                         return `<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid #f1f3f5;">
                             <span style="font-size:13px; flex:1;">${nombre} <span style="color:#adb5bd; font-size:11px;">(tiene ${cant})</span></span>
-                            <input type="number" min="0" max="${cant}" value="0" style="width:60px; padding:5px; border-radius:6px; border:1.5px solid #e9ecef;" onchange="sucursalVentaSeleccion['${pid}'] = parseInt(this.value)||0">
+                            <input type="number" min="0" max="${cant}" value="0" style="width:60px; padding:5px; border-radius:6px; border:1.5px solid #e9ecef;" onchange="sucursalVentaSeleccion['${clave}'] = parseInt(this.value)||0">
                         </div>`;
                     }).join('')}</div>
                     <button class="btn" style="width:100%; background:#6610f2; color:white; margin-top:10px;" onclick="confirmarVentaReportadaSucursal()">💰 Registrar venta reportada</button>
@@ -5564,12 +6037,27 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             if (!buscadorEl) return;
             const q = buscadorEl.value.trim().toLowerCase();
             const filtrados = q ? productos.filter(p => p.nombre.toLowerCase().includes(q)) : productos;
-            document.getElementById('sucursal-envio-lista').innerHTML = filtrados.slice(0, 60).map(p => `
+            const lineas = filtrados.slice(0, 60).flatMap(p => lineasEnvioDeProducto(p));
+            document.getElementById('sucursal-envio-lista').innerHTML = lineas.length === 0
+                ? '<p style="font-size:12px; color:#adb5bd; margin:4px;">Sin productos con piezas disponibles.</p>'
+                : lineas.map(l => `
                 <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid #f1f3f5;">
-                    <span style="font-size:12.5px; flex:1;">${p.nombre}</span>
-                    <input type="number" min="0" value="${sucursalEnvioSeleccion[p.id] || 0}" style="width:55px; padding:4px; border-radius:6px; border:1.5px solid #e9ecef;" onchange="sucursalEnvioSeleccion['${p.id}'] = parseInt(this.value)||0">
+                    <span style="font-size:12.5px; flex:1;">${l.etiqueta}${l.disponible !== null ? ` <span style="color:#adb5bd; font-size:11px;">(${l.disponible} disp.)</span>` : ''}</span>
+                    <input type="number" min="0" value="${sucursalEnvioSeleccion[l.clave] || 0}" style="width:55px; padding:4px; border-radius:6px; border:1.5px solid #e9ecef;" onchange="sucursalEnvioSeleccion['${l.clave}'] = parseInt(this.value)||0">
                 </div>
             `).join('');
+        }
+
+        // Una línea por sabor con piezas (o una sola línea si el producto no lleva control por sabor).
+        function lineasEnvioDeProducto(p) {
+            if (usaControlPorSabor(p)) {
+                return opcionesSaborDe(p).map(o => ({
+                    clave: claveStockSucursal(p.id, o.sabor),
+                    etiqueta: nombreConSabor(p.nombre, o.sabor || 'Sin sabor asignado'),
+                    disponible: o.disponible
+                }));
+            }
+            return [{ clave: p.id, etiqueta: p.nombre, disponible: null }];
         }
 
         async function confirmarEnvioSucursal() {
@@ -5580,10 +6068,15 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
 
             const detalleItems = [];
             let totalInvertido = 0;
-            for (const [pid, cant] of itemsSel) {
+            for (const [clave, cant] of itemsSel) {
+                const { pid, sabor } = separarClaveStock(clave);
                 const p = productos.find(x => x.id === pid);
                 if (!p) continue;
-                detalleItems.push({ productoId: pid, nombre: p.nombre, cantidad: cant, precioAdquisicion: p.precioAdquisicion, precioMayoreo: p.precioMayoreo, precioPublico: p.precioPublico });
+                if (usaControlPorSabor(p)) {
+                    const hay = cantidadDeSabor(p, sabor) || 0;
+                    if (cant > hay) { alert(`En tu inventario solo hay ${hay} de ${nombreConSabor(p.nombre, sabor || 'sin sabor asignado')}.`); return; }
+                }
+                detalleItems.push({ productoId: pid, sabor, nombre: nombreConSabor(p.nombre, sabor), cantidad: cant, precioAdquisicion: p.precioAdquisicion, precioMayoreo: p.precioMayoreo, precioPublico: p.precioPublico });
                 totalInvertido += p.precioAdquisicion * cant;
             }
             if (detalleItems.length === 0) { alert('No se encontraron los productos seleccionados.'); return; }
@@ -5603,13 +6096,11 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
 
             for (const it of detalleItems) {
                 const p = productos.find(x => x.id === it.productoId);
-                if (p && p.cantidadStock !== null && p.cantidadStock !== undefined) {
-                    const nuevoStock = Math.max(0, p.cantidadStock - it.cantidad);
-                    await db.ref('productos/' + it.productoId).update({ cantidadStock: nuevoStock, enStock: nuevoStock > 0 });
-                }
-                const actual = sucursalActualStock[it.productoId] || 0;
-                await db.ref(`sucursales/${sucursalActualId}/stock/${it.productoId}`).set(actual + it.cantidad);
-                sucursalActualStock[it.productoId] = actual + it.cantidad;
+                if (p) await aplicarDescuentoStock(p, it.sabor || '', it.cantidad);
+                const clave = claveStockSucursal(it.productoId, it.sabor || '');
+                const actual = sucursalActualStock[clave] || 0;
+                await db.ref(`sucursales/${sucursalActualId}/stock/${clave}`).set(actual + it.cantidad);
+                sucursalActualStock[clave] = actual + it.cantidad;
             }
 
             await db.ref(`sucursales/${sucursalActualId}/envios`).push({ fecha: new Date().toISOString(), items: detalleItems, costoEnvio });
@@ -5706,10 +6197,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             const { ordenado, itemsStock } = sucursalAnalisisCache;
 
             const itemsStockOrdenados = itemsStock
-                .map(([pid, cant]) => {
-                    const p = productos.find(x => x.id === pid);
-                    return { nombre: p ? p.nombre : '(producto eliminado)', cantidad: cant };
-                })
+                .map(([clave, cant]) => ({ nombre: nombreDeClaveStock(clave), cantidad: cant }))
                 .sort((a, b) => a.nombre.localeCompare(b.nombre));
 
             if (ordenado.length === 0 && itemsStockOrdenados.length === 0) {
@@ -5796,20 +6284,22 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             let montoDebido = 0;
             let costoAdquisicionEsto = 0;
 
-            for (const [pid, cant] of items) {
+            for (const [clave, cant] of items) {
+                const { pid, sabor } = separarClaveStock(clave);
                 const p = productos.find(x => x.id === pid);
                 if (!p) continue;
-                const stockActual = sucursalActualStock[pid] || 0;
-                if (cant > stockActual) { alert(`No puede haber vendido más de lo que tiene (${p.nombre}: tiene ${stockActual}).`); return; }
-                detalleItems.push({ productoId: pid, nombre: p.nombre, cantidad: cant });
+                const stockActual = sucursalActualStock[clave] || 0;
+                const etiqueta = nombreConSabor(p.nombre, sabor);
+                if (cant > stockActual) { alert(`No puede haber vendido más de lo que tiene (${etiqueta}: tiene ${stockActual}).`); return; }
+                detalleItems.push({ productoId: pid, sabor, nombre: etiqueta, cantidad: cant });
                 montoDebido += p.precioMayoreo * cant;
                 costoAdquisicionEsto += p.precioAdquisicion * cant;
             }
 
-            for (const [pid, cant] of items) {
-                const stockActual = sucursalActualStock[pid] || 0;
-                await db.ref(`sucursales/${sucursalActualId}/stock/${pid}`).set(stockActual - cant);
-                sucursalActualStock[pid] = stockActual - cant;
+            for (const [clave, cant] of items) {
+                const stockActual = sucursalActualStock[clave] || 0;
+                await db.ref(`sucursales/${sucursalActualId}/stock/${clave}`).set(stockActual - cant);
+                sucursalActualStock[clave] = stockActual - cant;
             }
 
             const diasAntes = diasDesde(s.ultimoReporteFecha || s.fechaAlta);
@@ -5892,9 +6382,8 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
 
             const htmlLoQueTiene = itemsStock.length === 0
                 ? '<p style="font-size:12px; color:#adb5bd;">No tiene nada en existencia.</p>'
-                : itemsStock.map(([pid, cant]) => {
-                    const p = productos.find(x => x.id === pid);
-                    return `<div style="display:flex; justify-content:space-between; font-size:13px; padding:3px 0; border-bottom:1px solid #f1f3f5;"><span>${p ? p.nombre : '(eliminado)'}</span><span style="font-weight:700;">${cant}</span></div>`;
+                : itemsStock.map(([clave, cant]) => {
+                    return `<div style="display:flex; justify-content:space-between; font-size:13px; padding:3px 0; border-bottom:1px solid #f1f3f5;"><span>${nombreDeClaveStock(clave)}</span><span style="font-weight:700;">${cant}</span></div>`;
                 }).join('');
 
             const elem = document.getElementById('sucursal-analisis-contenido');
@@ -5958,10 +6447,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 mensaje += '\n\n⚠️ Todavía tiene:';
                 if (tienePendiente) mensaje += `\n• $${s.pendienteCobro.toFixed(2)} pendientes de cobro`;
                 if (tieneStock) {
-                    const detalle = stockItems.map(([pid, cant]) => {
-                        const p = productos.find(x => x.id === pid);
-                        return `${cant}x ${p ? p.nombre : '(producto eliminado)'}`;
-                    }).join(', ');
+                    const detalle = stockItems.map(([clave, cant]) => `${cant}x ${nombreDeClaveStock(clave)}`).join(', ');
                     mensaje += `\n• Stock sin vender: ${detalle}`;
                 }
                 mensaje += '\n\nSi la eliminas, esta información se perderá para siempre.';
@@ -6071,10 +6557,13 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         function renderListaProductosCredito() {
             const q = document.getElementById('credito-buscador-producto').value.trim().toLowerCase();
             const filtrados = q ? productos.filter(p => p.nombre.toLowerCase().includes(q)) : productos;
-            document.getElementById('credito-lista-productos').innerHTML = filtrados.slice(0, 60).map(p => `
+            const lineas = filtrados.slice(0, 60).flatMap(p => lineasEnvioDeProducto(p));
+            document.getElementById('credito-lista-productos').innerHTML = lineas.length === 0
+                ? '<p style="font-size:12px; color:#adb5bd; margin:4px;">Sin productos con piezas disponibles.</p>'
+                : lineas.map(l => `
                 <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid #f1f3f5;">
-                    <span style="font-size:12.5px; flex:1;">${p.nombre}</span>
-                    <input type="number" min="0" value="${creditoSeleccionProductos[p.id] || 0}" style="width:55px; padding:4px; border-radius:6px; border:1.5px solid #e9ecef;" onchange="actualizarCantidadCredito('${p.id}', this.value)">
+                    <span style="font-size:12.5px; flex:1;">${l.etiqueta}${l.disponible !== null ? ` <span style="color:#adb5bd; font-size:11px;">(${l.disponible} disp.)</span>` : ''}</span>
+                    <input type="number" min="0" value="${creditoSeleccionProductos[l.clave] || 0}" style="width:55px; padding:4px; border-radius:6px; border:1.5px solid #e9ecef;" onchange="actualizarCantidadCredito('${l.clave}', this.value)">
                 </div>
             `).join('');
             actualizarPreviewCredito();
@@ -6088,9 +6577,9 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         function actualizarPreviewCredito() {
             const tipoPrecio = document.getElementById('credito-tipo-precio').value;
             let total = 0;
-            Object.entries(creditoSeleccionProductos).forEach(([pid, cant]) => {
+            Object.entries(creditoSeleccionProductos).forEach(([clave, cant]) => {
                 if (cant <= 0) return;
-                const p = productos.find(x => x.id === pid);
+                const p = productos.find(x => x.id === separarClaveStock(clave).pid);
                 if (!p) return;
                 total += (tipoPrecio === 'mayoreo' ? p.precioMayoreo : p.precioPublico) * cant;
             });
@@ -6107,17 +6596,25 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             const detalleItems = [];
             let total = 0;
 
-            for (const [pid, cant] of items) {
+            // Primero se valida todo (no se descuenta nada si algo no alcanza)
+            for (const [clave, cant] of items) {
+                const { pid, sabor } = separarClaveStock(clave);
+                const p = productos.find(x => x.id === pid);
+                if (!p) continue;
+                if (usaControlPorSabor(p)) {
+                    const hay = cantidadDeSabor(p, sabor) || 0;
+                    if (cant > hay) { alert(`En tu inventario solo hay ${hay} de ${nombreConSabor(p.nombre, sabor || 'sin sabor asignado')}.`); return; }
+                }
+            }
+
+            for (const [clave, cant] of items) {
+                const { pid, sabor } = separarClaveStock(clave);
                 const p = productos.find(x => x.id === pid);
                 if (!p) continue;
                 const precioUnit = tipoPrecio === 'mayoreo' ? p.precioMayoreo : p.precioPublico;
-                detalleItems.push({ productoId: pid, nombre: p.nombre, cantidad: cant, precioUnitario: precioUnit, precioAdquisicion: p.precioAdquisicion });
+                detalleItems.push({ productoId: pid, nombre: p.nombre, saborElegido: sabor, cantidad: cant, precioUnitario: precioUnit, precioAdquisicion: p.precioAdquisicion });
                 total += precioUnit * cant;
-
-                if (p.cantidadStock !== null && p.cantidadStock !== undefined) {
-                    const nuevoStock = Math.max(0, p.cantidadStock - cant);
-                    await db.ref('productos/' + pid).update({ cantidadStock: nuevoStock, enStock: nuevoStock > 0 });
-                }
+                await aplicarDescuentoStock(p, sabor, cant);
             }
 
             await db.ref('fiadoCreditos').push({
@@ -6152,7 +6649,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                             <div>
                                 <div style="font-size:12px; color:#6c757d;">${new Date(c.fecha).toLocaleDateString('es-MX')} · ${c.tipoPrecio === 'mayoreo' ? 'Precio Mayoreo' : 'Precio Público'}</div>
-                                <div style="font-size:13px;">${(c.items || []).map(it => `${it.cantidad}x ${it.nombre}`).join(', ')}</div>
+                                <div style="font-size:13px;">${(c.items || []).map(it => `${it.cantidad}x ${it.nombre}${it.saborElegido ? ' (' + it.saborElegido + ')' : ''}`).join(', ')}</div>
                             </div>
                             <div style="text-align:right;">
                                 <div style="font-weight:800;">$${c.monto.toFixed(2)}</div>
@@ -7124,16 +7621,36 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             };
         }
 
+        const pedidosPagoEnCurso = new Set();
+
         async function marcarPedidoPagado(pedidoId) {
             const pedido = pedidosPendientes.find(p => p.id === pedidoId);
             if (!pedido) return;
             if (!confirm(`¿Confirmas que recibiste el pago de $${pedido.total.toFixed(2)} de ${pedido.clienteNombre}?`)) return;
+            // Evita que un doble clic registre dos veces el pago y descuente dos veces el inventario.
+            if (pedidosPagoEnCurso.has(pedidoId)) return;
+            pedidosPagoEnCurso.add(pedidoId);
 
             const fechaPagoISO = new Date().toISOString();
             db.ref('pedidos/' + pedidoId).update({
                 estado: 'pagado',
                 fechaPago: fechaPagoISO
             });
+
+            // Inventario: los pedidos en línea ahora restan stock por producto y sabor al pagarse.
+            const avisosInventario = [];
+            const escriturasInventario = [];
+            (pedido.items || []).forEach(it => {
+                if (!it.productoId) return;   // los paquetes VIP no descuentan, igual que en tienda
+                const productoDelPedido = productos.find(p => p.id === it.productoId);
+                if (!productoDelPedido) return;
+                const { r, promesa } = descontarStockSinEsperar(productoDelPedido, it.saborElegido || '', it.cantidad);
+                escriturasInventario.push(promesa);
+                const etiqueta = nombreConSabor(productoDelPedido.nombre, it.saborElegido);
+                if (r.faltante > 0) avisosInventario.push(`faltaron ${r.faltante} pza. de ${etiqueta}`);
+                if (r.saborNoEncontrado) avisosInventario.push(`el sabor de ${etiqueta} ya no está registrado (se descontó del primer renglón con piezas)`);
+            });
+            Promise.all(escriturasInventario).catch(e => mostrarNotif('❌ No se pudo actualizar el inventario: ' + e.message, 'error'));
 
             db.ref('ventas').push({
                 pedidoId: pedidoId,
@@ -7152,6 +7669,9 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
 
             const { eraVIP, esVIPAhora, subioNivel, nivelActualDesbloqueado } = await acreditarVentaACliente(pedido.clienteTelefono, pedido.items, pedido.total, formatearNumeroOrden(pedido.numeroOrden));
             mostrarNotif(`✅ Pago confirmado. Se actualizó el gradiente de ${pedido.clienteNombre}.`, 'success');
+            if (avisosInventario.length > 0) {
+                setTimeout(() => mostrarNotif('⚠️ Inventario: ' + avisosInventario.join(' · '), 'error'), 3300);
+            }
 
             let mensaje = `Hola ${pedido.clienteNombre}, tu pedido por $${pedido.total.toFixed(2)} fue confirmado ✅ ¡Gracias por tu compra en ArtFit Supplements! 💪`;
 
@@ -8466,7 +8986,6 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             setTimeout(() => notif.classList.remove('show'), 3000);
         }
 
-        document.getElementById('modal-form').addEventListener('click', cerrarModal);
         document.getElementById('modal-carrito').addEventListener('click', cerrarModalCarrito);
 
 
