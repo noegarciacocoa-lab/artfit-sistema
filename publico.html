@@ -1476,7 +1476,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         }
 
         function renderCategorias() {
-            const cats = ['Todas', 'Proteínas', 'Pre-Entrenos', 'Aminoácidos', 'Vitaminas', 'Creatinas', 'Pro-hormonales', 'Carbohidratos', 'Quemadores', 'Ganadores de Peso', 'Accesorios', 'Otros', 'Bebidas y Snacks', 'Ropa y calzado', 'Alimentos'];
+            const cats = ['Todas', 'Proteínas', 'Pre-Entrenos', 'Aminoácidos', 'Vitaminas', 'Creatinas', 'Pro-hormonales y Péptidos', 'Carbohidratos', 'Quemadores', 'Ganadores de Peso', 'Accesorios', 'Otros', 'Bebidas y Snacks', 'Ropa y calzado', 'Alimentos'];
             const html = cats.map(cat => 
                 `<button class="cat-btn ${cat === categoriaActual ? 'active' : ''}" onclick="filtrarCategoria('${cat}')">${cat}</button>`
             ).join('');
@@ -3219,7 +3219,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 <h2 style="margin-bottom:18px;">Disclaimer</h2>
                 <p style="margin-bottom:14px; line-height:1.6;">ArtFit Supplements actúa como distribuidor de los productos publicados en esta plataforma.</p>
                 <p style="margin-bottom:14px; line-height:1.6;">No proporcionamos asesoramiento médico, farmacológico, nutricional ni deportivo a través del sitio. El uso, administración y consumo de cualquier producto es responsabilidad exclusiva del cliente.</p>
-                <p style="margin-bottom:14px; line-height:1.6;">Recomendamos consultar a un profesional de la salud antes de utilizar cualquier producto, especialmente los de la categoría Pro-hormonales.</p>
+                <p style="margin-bottom:14px; line-height:1.6;">Recomendamos consultar a un profesional de la salud antes de utilizar cualquier producto, especialmente los de la categoría Pro-hormonales y Péptidos.</p>
                 <p style="margin-bottom:14px; line-height:1.6;">Algunos productos pueden requerir experiencia previa o estar sujetos a regulaciones locales — es responsabilidad del cliente verificar la legalidad de los productos en su localidad.</p>
                 <p style="line-height:1.6;">La información mostrada en esta página tiene fines informativos y comerciales.</p>
             `);
@@ -3250,7 +3250,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 <p style="margin-bottom:6px; line-height:1.6; color:#495057;">ArtFit Supplements actúa como distribuidor de los productos publicados en este catálogo. La compra de productos a través de esta plataforma no incluye asesoramiento médico, farmacológico, nutricional ni deportivo — el uso, consumo y administración de cualquier producto adquirido aquí es responsabilidad exclusiva del cliente, quien declara hacerlo bajo su propio criterio.</p>
                 <p style="margin-bottom:14px; line-height:1.6; color:#495057;">Si buscas orientación personalizada, ofrecemos por separado un servicio formal de coaching. La compra de productos y la contratación de coaching son servicios independientes entre sí.</p>
                 <p style="font-weight:700; margin-bottom:4px;">11. Legalidad y uso de productos</p>
-                <p style="margin-bottom:14px; line-height:1.6; color:#495057;">Es tu responsabilidad conocer la regulación aplicable en tu localidad y verificar la legalidad de los productos que adquieres, especialmente en la categoría de Pro-hormonales.</p>
+                <p style="margin-bottom:14px; line-height:1.6; color:#495057;">Es tu responsabilidad conocer la regulación aplicable en tu localidad y verificar la legalidad de los productos que adquieres, especialmente en la categoría de Pro-hormonales y Péptidos.</p>
                 <p style="font-weight:700; margin-bottom:4px;">12. Derecho de admisión y cancelación</p>
                 <p style="margin-bottom:14px; line-height:1.6; color:#495057;">Nos reservamos el derecho de rechazar o cancelar pedidos que consideremos sospechosos, fraudulentos o contrarios a nuestras políticas.</p>
                 <p style="font-weight:700; margin-bottom:4px;">13. Modificaciones</p>
@@ -4150,11 +4150,32 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
 
         // El reproductor (iframe) solo se crea cuando el cliente toca la portada — así no se cargan
         // todos los videos del feed de una vez, nada más el que realmente quiere ver.
+        // Solo un testimonio se reproduce a la vez: al tocar uno nuevo, el que estaba sonando
+        // se regresa a su portada (se destruye su reproductor, así deja de sonar de verdad).
+        let videoTestimonioActivo = null;   // { id, htmlOriginal, embedUrl }
+
         function cargarVideoTestimonio(idContenedor, embedUrl) {
             const cont = document.getElementById(idContenedor);
             if (!cont) return;
-            cont.innerHTML = `<iframe src="${embedUrl}" style="width:100%; height:100%; border:0;" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+            if (videoTestimonioActivo && videoTestimonioActivo.id === idContenedor) return;   // ya se está reproduciendo
+            if (videoTestimonioActivo) detenerVideoTestimonioActivo();
+            const htmlOriginal = cont.innerHTML;
+            // El iframe se pone en posición absoluta llenando todo el recuadro — evita el recorte
+            // y el scroll interno que a veces mete el reproductor de YouTube/Instagram.
+            cont.innerHTML = `<iframe src="${embedUrl}" scrolling="no" style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
             cont.onclick = null;
+            videoTestimonioActivo = { id: idContenedor, htmlOriginal, embedUrl };
+        }
+
+        function detenerVideoTestimonioActivo() {
+            if (!videoTestimonioActivo) return;
+            const { id, htmlOriginal, embedUrl } = videoTestimonioActivo;
+            const cont = document.getElementById(id);
+            if (cont) {
+                cont.innerHTML = htmlOriginal;
+                cont.onclick = () => cargarVideoTestimonio(id, embedUrl);
+            }
+            videoTestimonioActivo = null;
         }
 
         async function verMasCoaching() {
@@ -4194,6 +4215,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
 
         function cerrarModalCoaching() {
             document.getElementById('modal-coaching').classList.remove('show');
+            videoTestimonioActivo = null;
         }
 
         let sorteoCapturaBase64Temp = null;

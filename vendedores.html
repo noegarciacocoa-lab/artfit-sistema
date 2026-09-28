@@ -1366,7 +1366,7 @@
                         <option>Aminoácidos</option>
                         <option>Vitaminas</option>
                         <option>Creatinas</option>
-                        <option>Pro-hormonales</option>
+                        <option>Pro-hormonales y Péptidos</option>
                         <option>Carbohidratos</option>
                         <option>Quemadores</option>
                         <option>Ganadores de Peso</option>
@@ -2100,11 +2100,28 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             ajustarAlturaHeaderSticky();
             actualizarBadgeCodigosBarras();
             actualizarBadgeCaducidades();
+            migrarCategoriaProhormonales();
             if (!masVendidosCalculados) {
                 masVendidosCalculados = true;
                 recalcularMasVendidosAuto();
             }
         });
+
+        // Renombramos la categoría "Pro-hormonales" a "Pro-hormonales y Péptidos" — esto
+        // actualiza a los productos que ya tenían guardado el nombre viejo, una sola vez,
+        // para que no se queden fuera del filtro nuevo en ningún catálogo.
+        let migracionProhormonalesHecha = false;
+        function migrarCategoriaProhormonales() {
+            if (migracionProhormonalesHecha) return;
+            const porActualizar = productos.filter(p => p.categoria === 'Pro-hormonales');
+            if (porActualizar.length === 0) { migracionProhormonalesHecha = true; return; }
+            const actualizaciones = {};
+            porActualizar.forEach(p => { actualizaciones[p.id + '/categoria'] = 'Pro-hormonales y Péptidos'; });
+            db.ref('productos').update(actualizaciones).then(() => {
+                migracionProhormonalesHecha = true;
+                mostrarNotif(`🔄 ${porActualizar.length} producto(s) actualizado(s) a "Pro-hormonales y Péptidos"`, 'success');
+            });
+        }
 
         let clientesUltimaRevisionFecha = null;
         db.ref('configuracion/clientesUltimaRevision').on('value', snap => {
@@ -2205,7 +2222,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         }
 
         function renderCategorias() {
-            const cats = ['Todas', 'Proteínas', 'Pre-Entrenos', 'Aminoácidos', 'Vitaminas', 'Creatinas', 'Pro-hormonales', 'Carbohidratos', 'Quemadores', 'Ganadores de Peso', 'Accesorios', 'Otros', 'Bebidas y Snacks', 'Ropa y calzado', 'Alimentos'];
+            const cats = ['Todas', 'Proteínas', 'Pre-Entrenos', 'Aminoácidos', 'Vitaminas', 'Creatinas', 'Pro-hormonales y Péptidos', 'Carbohidratos', 'Quemadores', 'Ganadores de Peso', 'Accesorios', 'Otros', 'Bebidas y Snacks', 'Ropa y calzado', 'Alimentos'];
             const html = cats.map(cat => 
                 `<button class="cat-btn ${cat === categoriaActual ? 'active' : ''}" onclick="filtrarCategoria('${cat}')">${cat}</button>`
             ).join('');
