@@ -6054,10 +6054,6 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         function agregarTestimonio() {
             const nombre = document.getElementById('testimonio-nombre').value.trim();
             const texto = document.getElementById('testimonio-texto').value.trim();
-            if (!nombre || !texto) {
-                alert('Escribe el nombre y el testimonio antes de agregarlo.');
-                return;
-            }
             const link = document.getElementById('testimonio-video-link').value.trim();
             let video = null;
             if (link) {
@@ -6065,6 +6061,10 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 if (!v) { alert('El link de video no es de YouTube ni de Instagram. Corrígelo o bórralo antes de guardar.'); return; }
                 if (v.plataforma === 'instagram' && !testimonioPortadaVideoBase64Temp) { alert('Los videos de Instagram necesitan una portada — sube una captura.'); return; }
                 video = { plataforma: v.plataforma, embed: v.embed, miniatura: v.plataforma === 'youtube' ? v.miniatura : testimonioPortadaVideoBase64Temp };
+            }
+            if (!nombre && !texto && !testimonioFotoBase64Temp && !video) {
+                alert('Agrega al menos una foto, un video, un nombre o un texto antes de guardarlo.');
+                return;
             }
             db.ref('coachingTestimonios').push({ nombre, texto, fotoBase64: testimonioFotoBase64Temp || null, video, fecha: new Date().toISOString() }).then(() => {
                 document.getElementById('testimonio-nombre').value = '';
@@ -6095,8 +6095,8 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                             ${data[id].fotoBase64 ? `<img src="${data[id].fotoBase64}" style="width:44px; height:44px; object-fit:cover; border-radius:8px; flex-shrink:0;">` : ''}
                             <div>
                                 ${data[id].video ? `<span style="font-size:10.5px; font-weight:800; color:#dc3545; background:#fde8ea; border-radius:6px; padding:2px 6px;">🎬 ${data[id].video.plataforma === 'youtube' ? 'YouTube' : 'Instagram'}</span>` : ''}
-                                <p style="font-size:13px; font-style:italic; margin-bottom:6px;">"${data[id].texto}"</p>
-                                <p style="font-size:12px; font-weight:700; color:#6c757d; margin:0;">— ${data[id].nombre}</p>
+                                ${data[id].texto ? `<p style="font-size:13px; font-style:italic; margin-bottom:6px;">"${data[id].texto}"</p>` : '<p style="font-size:12px; color:#adb5bd; margin-bottom:6px;">(sin texto)</p>'}
+                                <p style="font-size:12px; font-weight:700; color:#6c757d; margin:0;">${data[id].nombre ? '— ' + data[id].nombre : '(sin nombre)'}</p>
                             </div>
                         </div>
                         <button onclick="eliminarTestimonio('${id}')" style="background:white; color:#dc3545; border:1.5px solid #dc3545; border-radius:6px; font-size:11px; padding:4px 8px; cursor:pointer; flex-shrink:0;">Eliminar</button>

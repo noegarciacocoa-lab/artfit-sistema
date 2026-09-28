@@ -4141,8 +4141,8 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                             </div>
                         </div>
                     ` : (t.fotoBase64 ? `<img src="${t.fotoBase64}" style="width:100%; border-radius:8px; margin-bottom:10px; cursor:pointer;" onclick="verComprobanteGrande('${t.fotoBase64}')">` : '')}
-                    <p style="font-size:13px; line-height:1.5; margin-bottom:6px; font-style:italic;">"${t.texto}"</p>
-                    <p style="font-size:12px; font-weight:700; color:#6c757d; margin:0;">— ${t.nombre}</p>
+                    ${t.texto ? `<p style="font-size:13px; line-height:1.5; margin-bottom:6px; font-style:italic;">"${t.texto}"</p>` : ''}
+                    ${t.nombre ? `<p style="font-size:12px; font-weight:700; color:#6c757d; margin:0;">— ${t.nombre}</p>` : ''}
                 </div>
             `;
         }
