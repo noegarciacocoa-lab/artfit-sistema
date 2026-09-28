@@ -4071,20 +4071,20 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         // solo baja las que realmente se van a mostrar.
         const COACHING_LOTE_TRANSFORMACIONES = 6;
         const COACHING_LOTE_TESTIMONIOS = 3;
-        let coachingCursorT = null;    // llave de la más vieja ya traída (transformaciones)
-        let coachingCursorTe = null;   // llave de la más vieja ya traída (testimonios)
+        let coachingCursorT = null;    // "orden" del último ya traído (transformaciones)
+        let coachingCursorTe = null;   // "orden" del último ya traído (testimonios)
         let coachingSinMasT = false;
         let coachingSinMasTe = false;
         let coachingCargandoMas = false;
 
-        // Trae el siguiente lote de una colección (más reciente primero), usando la llave de Firebase como cursor.
-        function traerLoteCoaching(coleccion, cursor, tamano) {
-            let ref = db.ref(coleccion).orderByKey();
-            ref = cursor ? ref.endBefore(cursor).limitToLast(tamano) : ref.limitToLast(tamano);
+        // Trae el siguiente lote de una colección, en el orden que el vendedor definió a mano
+        // (campo "orden": empieza por la primera que subió, salvo que la haya movido de lugar).
+        function traerLoteCoaching(coleccion, cursorOrden, tamano) {
+            let ref = db.ref(coleccion).orderByChild('orden');
+            ref = (cursorOrden !== null && cursorOrden !== undefined) ? ref.startAfter(cursorOrden).limitToFirst(tamano) : ref.limitToFirst(tamano);
             return ref.once('value').then(snapshot => {
                 const items = [];
-                snapshot.forEach(hijo => { items.push({ key: hijo.key, val: hijo.val() }); });
-                items.reverse();   // más reciente primero
+                snapshot.forEach(hijo => { items.push({ key: hijo.key, orden: (hijo.val() || {}).orden, val: hijo.val() }); });
                 return items;
             });
         }
@@ -4125,7 +4125,8 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
 
         function renderItemCoachingFeed(item) {
             if (item.tipo === 'transformacion') {
-                return `<img src="${item.data}" style="width:100%; border-radius:10px; margin-bottom:14px; cursor:pointer;" onclick="verComprobanteGrande('${item.data}')">`;
+                const img = (item.data && typeof item.data === 'object') ? item.data.img : item.data;   // por si queda algún registro viejo sin migrar
+                return `<img src="${img}" style="width:100%; border-radius:10px; margin-bottom:14px; cursor:pointer;" onclick="verComprobanteGrande('${img}')">`;
             }
             const t = item.data;
             const idVideo = 'video-testi-' + Math.random().toString(36).slice(2);
@@ -4168,9 +4169,9 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             ]);
 
             if (loteT.length < COACHING_LOTE_TRANSFORMACIONES) coachingSinMasT = true;
-            if (loteT.length > 0) coachingCursorT = loteT[loteT.length - 1].key;
+            if (loteT.length > 0) coachingCursorT = loteT[loteT.length - 1].orden;
             if (loteTe.length < COACHING_LOTE_TESTIMONIOS) coachingSinMasTe = true;
-            if (loteTe.length > 0) coachingCursorTe = loteTe[loteTe.length - 1].key;
+            if (loteTe.length > 0) coachingCursorTe = loteTe[loteTe.length - 1].orden;
 
             const feed = [];
             let it = 0, ite = 0;

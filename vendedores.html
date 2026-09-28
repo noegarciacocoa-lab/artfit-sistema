@@ -5935,7 +5935,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                     const base64 = canvas.toDataURL('image/jpeg', 0.75);
-                    db.ref('coachingTransformaciones').push(base64).then(() => {
+                    db.ref('coachingTransformaciones').push({ img: base64, orden: transformacionesSiguienteOrden++, fecha: new Date().toISOString() }).then(() => {
                         document.getElementById('transformacion-input').value = '';
                         mostrarNotif('📸 Foto agregada', 'success');
                         cargarTransformaciones();
@@ -5946,21 +5946,64 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             lector.readAsDataURL(archivo);
         }
 
-        function cargarTransformaciones() {
-            db.ref('coachingTransformaciones').once('value').then(snapshot => {
-                const data = snapshot.val();
-                const cont = document.getElementById('lista-transformaciones');
-                if (!data) {
-                    cont.innerHTML = '<p style="font-size:12px; color:#adb5bd;">Todavía no hay fotos.</p>';
-                    return;
-                }
-                cont.innerHTML = Object.keys(data).map(id => `
-                    <div style="position:relative;">
-                        <img src="${data[id]}" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px;">
-                        <button onclick="eliminarTransformacion('${id}')" style="position:absolute; top:4px; right:4px; background:#dc3545; color:white; border:none; border-radius:50%; width:22px; height:22px; font-size:12px; cursor:pointer;">✕</button>
-                    </div>
-                `).join('');
+        let transformacionesSiguienteOrden = 0;
+
+        // Los registros de antes de esta actualización no tienen "orden" (y guardaban solo el
+        // texto de la imagen, no un objeto). Se completan una sola vez, en el mismo orden en que
+        // se subieron (que es el orden en que Firebase ya las entrega).
+        async function migrarOrdenTransformaciones(data) {
+            const claves = Object.keys(data);
+            const actualizaciones = {};
+            claves.forEach((id, i) => {
+                const v = data[id];
+                if (typeof v === 'string') actualizaciones[id] = { img: v, orden: i, fecha: new Date().toISOString() };
+                else if (v && v.orden === undefined) actualizaciones[id + '/orden'] = i;
             });
+            if (Object.keys(actualizaciones).length > 0) {
+                await db.ref('coachingTransformaciones').update(actualizaciones);
+                claves.forEach((id, i) => {
+                    if (typeof data[id] === 'string') data[id] = { img: data[id], orden: i };
+                    else if (data[id].orden === undefined) data[id].orden = i;
+                });
+            }
+        }
+
+        async function cargarTransformaciones() {
+            const snapshot = await db.ref('coachingTransformaciones').once('value');
+            const data = snapshot.val();
+            const cont = document.getElementById('lista-transformaciones');
+            if (!data) {
+                cont.innerHTML = '<p style="font-size:12px; color:#adb5bd;">Todavía no hay fotos.</p>';
+                transformacionesSiguienteOrden = 0;
+                return;
+            }
+            await migrarOrdenTransformaciones(data);
+            const items = Object.keys(data).map(id => ({ id, ...data[id] })).sort((a, b) => a.orden - b.orden);
+            transformacionesSiguienteOrden = items.length ? items[items.length - 1].orden + 1 : 0;
+            cont.innerHTML = items.map((it, i) => `
+                <div style="position:relative;">
+                    <img src="${it.img}" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px;">
+                    <button onclick="eliminarTransformacion('${it.id}')" style="position:absolute; top:4px; right:4px; background:#dc3545; color:white; border:none; border-radius:50%; width:22px; height:22px; font-size:12px; cursor:pointer;">✕</button>
+                    <div style="position:absolute; bottom:4px; left:4px; display:flex; gap:3px;">
+                        <button onclick="moverTransformacion('${it.id}', -1)" ${i === 0 ? 'disabled' : ''} style="background:rgba(0,0,0,0.6); color:white; border:none; border-radius:6px; width:22px; height:22px; font-size:12px; cursor:pointer; opacity:${i === 0 ? '0.35' : '1'};">◀</button>
+                        <button onclick="moverTransformacion('${it.id}', 1)" ${i === items.length - 1 ? 'disabled' : ''} style="background:rgba(0,0,0,0.6); color:white; border:none; border-radius:6px; width:22px; height:22px; font-size:12px; cursor:pointer; opacity:${i === items.length - 1 ? '0.35' : '1'};">▶</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function moverTransformacion(id, direccion) {
+            const snapshot = await db.ref('coachingTransformaciones').once('value');
+            const data = snapshot.val();
+            const items = Object.keys(data).map(k => ({ id: k, ...data[k] })).sort((a, b) => a.orden - b.orden);
+            const i = items.findIndex(x => x.id === id);
+            const j = i + direccion;
+            if (i < 0 || j < 0 || j >= items.length) return;
+            await db.ref('coachingTransformaciones').update({
+                [items[i].id + '/orden']: items[j].orden,
+                [items[j].id + '/orden']: items[i].orden
+            });
+            cargarTransformaciones();
         }
 
         function eliminarTransformacion(id) {
@@ -6066,7 +6109,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 alert('Agrega al menos una foto, un video, un nombre o un texto antes de guardarlo.');
                 return;
             }
-            db.ref('coachingTestimonios').push({ nombre, texto, fotoBase64: testimonioFotoBase64Temp || null, video, fecha: new Date().toISOString() }).then(() => {
+            db.ref('coachingTestimonios').push({ nombre, texto, fotoBase64: testimonioFotoBase64Temp || null, video, orden: testimoniosSiguienteOrden++, fecha: new Date().toISOString() }).then(() => {
                 document.getElementById('testimonio-nombre').value = '';
                 document.getElementById('testimonio-texto').value = '';
                 document.getElementById('testimonio-foto-preview').innerHTML = '';
@@ -6081,28 +6124,65 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             });
         }
 
-        function cargarTestimonios() {
-            db.ref('coachingTestimonios').once('value').then(snapshot => {
-                const data = snapshot.val();
-                const cont = document.getElementById('lista-testimonios');
-                if (!data) {
-                    cont.innerHTML = '<p style="font-size:12px; color:#adb5bd;">Todavía no hay testimonios.</p>';
-                    return;
-                }
-                cont.innerHTML = Object.keys(data).map(id => `
-                    <div style="background:#f8f9fa; border-radius:10px; padding:12px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:start; gap:10px;">
-                        <div style="display:flex; gap:10px; align-items:start;">
-                            ${data[id].fotoBase64 ? `<img src="${data[id].fotoBase64}" style="width:44px; height:44px; object-fit:cover; border-radius:8px; flex-shrink:0;">` : ''}
-                            <div>
-                                ${data[id].video ? `<span style="font-size:10.5px; font-weight:800; color:#dc3545; background:#fde8ea; border-radius:6px; padding:2px 6px;">🎬 ${data[id].video.plataforma === 'youtube' ? 'YouTube' : 'Instagram'}</span>` : ''}
-                                ${data[id].texto ? `<p style="font-size:13px; font-style:italic; margin-bottom:6px;">"${data[id].texto}"</p>` : '<p style="font-size:12px; color:#adb5bd; margin-bottom:6px;">(sin texto)</p>'}
-                                <p style="font-size:12px; font-weight:700; color:#6c757d; margin:0;">${data[id].nombre ? '— ' + data[id].nombre : '(sin nombre)'}</p>
-                            </div>
+        let testimoniosSiguienteOrden = 0;
+
+        // Igual que con las transformaciones: los testimonios de antes de esta actualización
+        // no tienen "orden" — se completa una sola vez, respetando el orden en que ya los tenía Firebase.
+        async function migrarOrdenTestimonios(data) {
+            const claves = Object.keys(data);
+            const actualizaciones = {};
+            claves.forEach((id, i) => { if (data[id].orden === undefined) actualizaciones[id + '/orden'] = i; });
+            if (Object.keys(actualizaciones).length > 0) {
+                await db.ref('coachingTestimonios').update(actualizaciones);
+                claves.forEach((id, i) => { if (data[id].orden === undefined) data[id].orden = i; });
+            }
+        }
+
+        async function cargarTestimonios() {
+            const snapshot = await db.ref('coachingTestimonios').once('value');
+            const data = snapshot.val();
+            const cont = document.getElementById('lista-testimonios');
+            if (!data) {
+                cont.innerHTML = '<p style="font-size:12px; color:#adb5bd;">Todavía no hay testimonios.</p>';
+                testimoniosSiguienteOrden = 0;
+                return;
+            }
+            await migrarOrdenTestimonios(data);
+            const items = Object.keys(data).map(id => ({ id, ...data[id] })).sort((a, b) => a.orden - b.orden);
+            testimoniosSiguienteOrden = items.length ? items[items.length - 1].orden + 1 : 0;
+            cont.innerHTML = items.map((it, i) => `
+                <div style="background:#f8f9fa; border-radius:10px; padding:12px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:start; gap:10px;">
+                    <div style="display:flex; gap:10px; align-items:start;">
+                        ${it.fotoBase64 ? `<img src="${it.fotoBase64}" style="width:44px; height:44px; object-fit:cover; border-radius:8px; flex-shrink:0;">` : ''}
+                        <div>
+                            ${it.video ? `<span style="font-size:10.5px; font-weight:800; color:#dc3545; background:#fde8ea; border-radius:6px; padding:2px 6px;">🎬 ${it.video.plataforma === 'youtube' ? 'YouTube' : 'Instagram'}</span>` : ''}
+                            ${it.texto ? `<p style="font-size:13px; font-style:italic; margin-bottom:6px;">"${it.texto}"</p>` : '<p style="font-size:12px; color:#adb5bd; margin-bottom:6px;">(sin texto)</p>'}
+                            <p style="font-size:12px; font-weight:700; color:#6c757d; margin:0;">${it.nombre ? '— ' + it.nombre : '(sin nombre)'}</p>
                         </div>
-                        <button onclick="eliminarTestimonio('${id}')" style="background:white; color:#dc3545; border:1.5px solid #dc3545; border-radius:6px; font-size:11px; padding:4px 8px; cursor:pointer; flex-shrink:0;">Eliminar</button>
                     </div>
-                `).join('');
+                    <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-end; flex-shrink:0;">
+                        <button onclick="eliminarTestimonio('${it.id}')" style="background:white; color:#dc3545; border:1.5px solid #dc3545; border-radius:6px; font-size:11px; padding:4px 8px; cursor:pointer;">Eliminar</button>
+                        <div style="display:flex; gap:3px;">
+                            <button onclick="moverTestimonio('${it.id}', -1)" ${i === 0 ? 'disabled' : ''} style="background:#e9ecef; color:#495057; border:none; border-radius:6px; width:24px; height:24px; font-size:12px; cursor:pointer; opacity:${i === 0 ? '0.4' : '1'};">▲</button>
+                            <button onclick="moverTestimonio('${it.id}', 1)" ${i === items.length - 1 ? 'disabled' : ''} style="background:#e9ecef; color:#495057; border:none; border-radius:6px; width:24px; height:24px; font-size:12px; cursor:pointer; opacity:${i === items.length - 1 ? '0.4' : '1'};">▼</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function moverTestimonio(id, direccion) {
+            const snapshot = await db.ref('coachingTestimonios').once('value');
+            const data = snapshot.val();
+            const items = Object.keys(data).map(k => ({ id: k, ...data[k] })).sort((a, b) => a.orden - b.orden);
+            const i = items.findIndex(x => x.id === id);
+            const j = i + direccion;
+            if (i < 0 || j < 0 || j >= items.length) return;
+            await db.ref('coachingTestimonios').update({
+                [items[i].id + '/orden']: items[j].orden,
+                [items[j].id + '/orden']: items[i].orden
             });
+            cargarTestimonios();
         }
 
         let todosLosClientesLista = [];
