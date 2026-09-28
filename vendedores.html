@@ -1324,7 +1324,7 @@
                 <button type="button" aria-label="Cerrar" onclick="cerrarModal()" style="width:32px; height:32px; border-radius:999px; border:none; background:#e9ecef; color:#495057; font-size:14px; cursor:pointer; flex-shrink:0;">✕</button>
             </div>
             <div id="modal-form-scroll" style="flex:1 1 auto; min-height:0; overflow-y:auto; padding:16px 24px 24px;">
-            <form id="producto-form" onsubmit="guardarProducto(event)" novalidate>
+            <form id="producto-form" onsubmit="return false;" onkeydown="bloquearEnterFormulario(event)" novalidate>
                 <div class="form-group">
                     <label>Nombre *</label>
                     <input type="text" id="nombre" required>
@@ -1479,7 +1479,7 @@
                     </div>
                 </div>
                 <div style="display: flex; gap: 10px;">
-                    <button type="submit" class="btn" style="flex: 1; background: #28a745; color: white;">
+                    <button type="button" class="btn" style="flex: 1; background: #28a745; color: white;" onclick="guardarProducto(event)">
                         Guardar
                     </button>
                     <button type="button" class="btn" style="flex: 1; background: white; color: #6c757d; border: 2px solid #6c757d;" onclick="cerrarModal()">
@@ -2583,6 +2583,21 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             if (controlStockActual === 'individual') document.getElementById('enStock').checked = total > 0;
         }
 
+        // La pistola de códigos manda un Enter después de cada código. El formulario ya no se puede
+        // enviar con Enter; además, en el código de un renglón el cursor pasa a la siguiente casilla.
+        function bloquearEnterFormulario(e) {
+            if (e.key !== 'Enter') return;
+            const t = e.target;
+            if (t.tagName === 'TEXTAREA' || t.tagName === 'BUTTON') return;
+            if (t.tagName === 'INPUT' && (t.type === 'submit' || t.type === 'button')) return;
+            e.preventDefault();
+            const renglon = t.closest ? t.closest('.renglon-stock') : null;
+            if (renglon && t.type === 'text') {
+                const siguiente = renglon.querySelector('select, input[type="number"]');
+                if (siguiente) { siguiente.focus(); if (siguiente.select) siguiente.select(); }
+            }
+        }
+
         function avisoFormulario(mensaje, idCampo) {
             mostrarNotif('⚠️ ' + mensaje, 'error');
             const campo = document.getElementById(idCampo);
@@ -2593,7 +2608,8 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         }
 
         async function guardarProducto(e) {
-            e.preventDefault();
+            if (e && e.preventDefault) e.preventDefault();
+            if (!document.getElementById('modal-form').classList.contains('show')) return;   // ya se cerró (doble clic)
 
             const nombreProducto = document.getElementById('nombre').value.trim();
             if (!nombreProducto) { avisoFormulario('Falta el nombre del producto', 'nombre'); return; }
@@ -8988,21 +9004,6 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
 
         document.getElementById('modal-carrito').addEventListener('click', cerrarModalCarrito);
 
-        // La pistola de códigos manda un Enter después de cada código; en un formulario eso lo
-        // guardaba y lo cerraba. Ahora el Enter nunca envía el formulario del producto (se guarda
-        // solo con el botón Guardar). En el código de un renglón, pasa a la siguiente casilla.
-        document.getElementById('producto-form').addEventListener('keydown', function (e) {
-            if (e.key !== 'Enter') return;
-            const t = e.target;
-            if (t.tagName === 'TEXTAREA' || t.tagName === 'BUTTON') return;
-            if (t.tagName === 'INPUT' && (t.type === 'submit' || t.type === 'button')) return;
-            e.preventDefault();
-            const renglon = t.closest ? t.closest('.renglon-stock') : null;
-            if (renglon && t.type === 'text') {
-                const siguiente = renglon.querySelector('select, input[type="number"]');
-                if (siguiente) { siguiente.focus(); if (siguiente.select) siguiente.select(); }
-            }
-        });
 
 
         function irAFiltros() {
