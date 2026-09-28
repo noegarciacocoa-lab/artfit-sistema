@@ -699,14 +699,17 @@
     </div>
 
     <div id="modal-coaching" class="modal">
-        <div class="modal-content" onclick="event.stopPropagation()" style="max-width:600px;">
+        <div class="modal-content" onclick="event.stopPropagation()" style="max-width:600px; position:relative;">
             <div style="position:sticky; top:-25px; margin:-25px -25px 0; padding:12px 15px 0; display:flex; justify-content:flex-end; z-index:10; background:white;">
                 <button type="button" onclick="cerrarModalCoaching()" style="background:#f1f1f1; border:none; border-radius:50%; width:30px; height:30px; font-size:16px; cursor:pointer; line-height:1;">✕</button>
             </div>
             <h2 style="margin-bottom:14px;">💪 Coaching con Noé García</h2>
             <p style="font-size:14px; line-height:1.6; margin-bottom:14px;">¿Buscas resultados reales y sostenibles? El Coach Noé García Ibarra ofrece coaching online personalizado: nutrición deportiva, entrenamiento adaptado, suplementación y acompañamiento 1 a 1, con seguimiento constante a través de app y WhatsApp.</p>
             <p style="font-size:14px; line-height:1.6; margin-bottom:16px;">Conoce todos los planes, precios y cómo inscribirte 👇</p>
-            <a href="https://infocoachnoegarcia.tiiny.site" target="_blank" class="btn-agregar" style="background:#c2530a; display:block; text-align:center; text-decoration:none; margin-bottom:20px;">🔗 Ver información completa de coaching</a>
+            <a id="coaching-info-original" href="https://infocoachnoegarcia.tiiny.site" target="_blank" class="btn-agregar" style="background:#c2530a; display:block; text-align:center; text-decoration:none; margin-bottom:20px;">🔗 Ver información completa de coaching</a>
+
+            <!-- Copia fija: solo se muestra cuando el botón de arriba ya no se ve en pantalla -->
+            <a id="coaching-info-fijo" href="https://infocoachnoegarcia.tiiny.site" target="_blank" class="btn-agregar" style="display:none; background:#c2530a; text-align:center; text-decoration:none; position:fixed; left:15px; right:15px; bottom:16px; max-width:570px; margin-left:auto; margin-right:auto; z-index:2200; box-shadow:0 4px 14px rgba(0,0,0,0.3);">🔗 Ver información completa de coaching</a>
 
             <div style="background:#fff3e0; border:1.5px solid #ff9800; border-radius:10px; padding:12px; margin-bottom:20px;">
                 <p style="font-size:12px; color:#c2530a; margin:0;">🥊 Si eres parte del Team Coaching, obtendrás un 10% de descuento automático en compras de 3 o más productos — tu código estará en Harbiz, la plataforma por la cual gestiono el servicio de Coaching, en la pestaña Archivos.</p>
@@ -718,6 +721,12 @@
                 <h3 style="font-size:15px; margin-bottom:10px;">📸 Transformaciones y testimonios</h3>
                 <div id="coaching-feed"></div>
                 <button type="button" id="coaching-ver-mas-btn" class="btn-agregar" style="background:#ff9800; margin-top:10px;" onclick="verMasCoaching()">Ver más ⌄</button>
+            </div>
+
+            <!-- Marco invisible del mismo ancho que el modal, fijo a la pantalla (no se mueve con
+                 el scroll interno); la flecha vive adentro, anclada a su esquina. -->
+            <div style="position:fixed; left:15px; right:15px; max-width:570px; margin-left:auto; margin-right:auto; bottom:0; height:0; z-index:2199; pointer-events:none;">
+                <div id="hint-scroll-coaching" style="display:none; position:absolute; bottom:78px; right:0; background:#c2530a; color:white; border-radius:24px; padding:10px 14px; align-items:center; gap:6px; font-weight:700; font-size:13px; font-family:inherit; box-shadow:0 2px 10px rgba(0,0,0,0.25); animation:rebote-scroll-hint 1.4s ease-in-out infinite;">⌄</div>
             </div>
         </div>
     </div>
@@ -4115,12 +4124,15 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             coachingCursorTe = null;
             coachingSinMasT = false;
             coachingSinMasTe = false;
+            coachingHintMostrado = false;
             document.getElementById('coaching-feed').innerHTML = '';
             document.getElementById('coaching-feed-wrap').style.display = 'none';
             document.getElementById('coaching-ver-mas-btn').style.display = 'none';
+            document.getElementById('hint-scroll-coaching').style.display = 'none';
             verMasCoaching();
 
             document.getElementById('modal-coaching').classList.add('show');
+            vigilarBotonInfoCoaching();
         }
 
         function renderItemCoachingFeed(item) {
@@ -4133,8 +4145,8 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             return `
                 <div style="background:#f8f9fa; border-radius:10px; padding:12px; margin-bottom:14px;">
                     ${t.video ? `
-                        <div id="${idVideo}" style="position:relative; width:100%; aspect-ratio:9/16; max-height:420px; border-radius:8px; overflow:hidden; margin-bottom:10px; cursor:pointer; background:#000;" onclick="cargarVideoTestimonio('${idVideo}', this.dataset.embed)" data-embed="${t.video.embed.replace(/&/g, '&amp;').replace(/"/g, '&quot;')}">
-                            ${t.video.miniatura ? `<img src="${t.video.miniatura}" style="width:100%; height:100%; object-fit:cover; display:block;">` : `<div style="width:100%; height:100%;"></div>`}
+                        <div id="${idVideo}" style="position:relative; width:100%; border-radius:8px; overflow:hidden; margin-bottom:10px; cursor:pointer; background:#000;" onclick="cargarVideoTestimonio('${idVideo}', this.dataset.embed)" data-embed="${t.video.embed.replace(/&/g, '&amp;').replace(/"/g, '&quot;')}">
+                            ${t.video.miniatura ? `<img src="${t.video.miniatura}" style="width:100%; height:auto; display:block;">` : `<div style="width:100%; height:160px;"></div>`}
                             <div style="position:absolute; inset:0; background:rgba(0,0,0,0.25); display:flex; align-items:center; justify-content:center;">
                                 <div style="width:64px; height:64px; border-radius:50%; background:rgba(255,255,255,0.92); display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(0,0,0,0.35);">
                                     <div style="width:0; height:0; border-top:13px solid transparent; border-bottom:13px solid transparent; border-left:20px solid #1a365d; margin-left:5px;"></div>
@@ -4160,18 +4172,21 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             if (videoTestimonioActivo && videoTestimonioActivo.id === idContenedor) return;   // ya se está reproduciendo
             if (videoTestimonioActivo) detenerVideoTestimonioActivo();
             const htmlOriginal = cont.innerHTML;
-            // El iframe se pone en posición absoluta llenando todo el recuadro — evita el recorte
-            // y el scroll interno que a veces mete el reproductor de YouTube/Instagram.
+            const estiloOriginal = cont.getAttribute('style');
+            // Antes de reproducir, el recuadro es chico (como cualquier otra foto). Al darle play
+            // se agranda vertical para que el video se vea completo, sin recorte y sin scroll.
+            cont.style.height = '640px';
             cont.innerHTML = `<iframe src="${embedUrl}" scrolling="no" style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
             cont.onclick = null;
-            videoTestimonioActivo = { id: idContenedor, htmlOriginal, embedUrl };
+            videoTestimonioActivo = { id: idContenedor, htmlOriginal, estiloOriginal, embedUrl };
         }
 
         function detenerVideoTestimonioActivo() {
             if (!videoTestimonioActivo) return;
-            const { id, htmlOriginal, embedUrl } = videoTestimonioActivo;
+            const { id, htmlOriginal, estiloOriginal, embedUrl } = videoTestimonioActivo;
             const cont = document.getElementById(id);
             if (cont) {
+                cont.setAttribute('style', estiloOriginal);   // regresa al tamaño chico original
                 cont.innerHTML = htmlOriginal;
                 cont.onclick = () => cargarVideoTestimonio(id, embedUrl);
             }
@@ -4205,6 +4220,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             if (feed.length > 0) {
                 document.getElementById('coaching-feed-wrap').style.display = 'block';
                 document.getElementById('coaching-feed').innerHTML += feed.map(renderItemCoachingFeed).join('');
+                mostrarHintScrollCoaching();
             }
 
             coachingCargandoMas = false;
@@ -4214,8 +4230,37 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         }
 
         function cerrarModalCoaching() {
+            detenerVideoTestimonioActivo();   // ocultar el recuadro con display:none NO detiene un video que ya está sonando — hay que destruir el reproductor de verdad
             document.getElementById('modal-coaching').classList.remove('show');
-            videoTestimonioActivo = null;
+            document.getElementById('hint-scroll-coaching').style.display = 'none';
+            document.getElementById('coaching-info-fijo').style.display = 'none';
+            if (coachingObserverBotonInfo) { coachingObserverBotonInfo.disconnect(); coachingObserverBotonInfo = null; }
+        }
+
+        // Se muestra una sola vez por cada vez que se abre el modal, y ya no se quita con el
+        // scroll — se queda visible mientras el modal siga abierto.
+        let coachingHintMostrado = false;
+        function mostrarHintScrollCoaching() {
+            if (coachingHintMostrado) return;
+            coachingHintMostrado = true;
+            const hint = document.getElementById('hint-scroll-coaching');
+            if (!hint) return;
+            hint.style.display = 'flex';
+        }
+
+        // El botón fijo de abajo solo aparece cuando el botón normal de arriba ya no se alcanza
+        // a ver en pantalla (se fue hacia arriba al hacer scroll); en cuanto vuelve a verse, se oculta.
+        let coachingObserverBotonInfo = null;
+        function vigilarBotonInfoCoaching() {
+            if (coachingObserverBotonInfo) return;   // ya está vigilando
+            const original = document.getElementById('coaching-info-original');
+            const fijo = document.getElementById('coaching-info-fijo');
+            const cont = document.querySelector('#modal-coaching .modal-content');
+            if (!original || !fijo || !cont || typeof IntersectionObserver === 'undefined') return;
+            coachingObserverBotonInfo = new IntersectionObserver(entradas => {
+                fijo.style.display = entradas[0].isIntersecting ? 'none' : 'block';
+            }, { root: cont, threshold: 0 });
+            coachingObserverBotonInfo.observe(original);
         }
 
         let sorteoCapturaBase64Temp = null;
