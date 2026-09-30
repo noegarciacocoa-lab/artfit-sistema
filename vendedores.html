@@ -1432,6 +1432,10 @@
                             <div id="lista-renglones-stock"></div>
                             <button type="button" class="btn" style="background:#28a745; color:white; font-size:12.5px; padding:8px 14px;" onclick="agregarRenglonStock()">➕ Agregar código / sabor</button>
                             <div id="stock-resumen-sabores" style="font-size:12px; font-weight:700; margin-top:8px;"></div>
+                            <label style="display:flex; align-items:flex-start; gap:8px; margin-top:12px; padding:10px; background:#fff3e0; border-radius:8px; font-size:12px; color:#7a4a00; cursor:pointer;">
+                                <input type="checkbox" id="codigoCompartidoKing" style="margin-top:2px;">
+                                <span>🏷️ Este código se repite entre sabores <strong>de fábrica</strong> — es un producto de <strong>King Supplements</strong> (King le pone el mismo código a todos los sabores de una misma línea). Marca esto solo si es así; para cualquier otra marca, un código repetido en dos sabores sigue bloqueado, porque lo normal es que sea un error de captura.</span>
+                            </label>
                         </div>
                         <div id="stock-simple-wrap" style="margin-top:12px;">
                         <div id="grupo-caducidad-simple" style="display:none; margin-bottom:10px;">
@@ -2302,6 +2306,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                             ${esProductoMasVendido(p) ? '<span class="tag vendido">🔥 MÁS VENDIDO</span>' : ''}
                         </div>` : ''}
                         ${p.sabores ? `<p style="color: #17a2b8; font-size: 13px; margin: 5px 0;">${saboresParaMostrar(p, true)}</p>` : ''}
+                        ${p.codigoCompartidoKing ? `<span style="display:inline-block; background:#fff3e0; color:#7a4a00; font-size:10.5px; font-weight:800; border-radius:6px; padding:2px 6px; margin-bottom:4px;">🏷️ Código compartido — King Supplements</span>` : ''}
                         ${(p.talla || p.color) ? `<p style="color: #6610f2; font-size: 13px; margin: 5px 0; font-weight:600;">${[p.talla ? 'Talla: ' + p.talla : '', p.color ? 'Color: ' + p.color : ''].filter(Boolean).join(' · ')}</p>` : ''}
                         ${etiquetaCaducidadProducto(p, false)}
                         ${p.requiereRefrigeracion ? `<p style="color: #17a2b8; font-size: 12px; margin: 5px 0; font-weight:600;">❄️ Requiere refrigeración</p>` : ''}
@@ -2711,15 +2716,20 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 const renglones = renglonesStockTemp
                     .map(r => ({ codigo: (r.codigo || '').trim(), sabor: r.sabor || '', cantidad: Math.max(0, parseInt(r.cantidad, 10) || 0), caducidad: r.caducidad || '' }))
                     .filter(r => r.codigo || r.sabor || r.cantidad > 0);
-                // Un mismo código puede estar en dos renglones solo si es del mismo sabor y con distinta fecha (dos lotes).
+                // Un mismo código puede estar en dos renglones si: (a) es el mismo sabor con distinta
+                // fecha (dos lotes), o (b) el vendedor confirmó que es un código de King Supplements
+                // compartido entre sabores (así viene de fábrica). Cualquier otra combinación se bloquea,
+                // porque lo normal es que sea un error de captura.
+                const codigoCompartidoKing = document.getElementById('codigoCompartidoKing').checked;
                 for (let a = 0; a < renglones.length; a++) {
                     for (let b = a + 1; b < renglones.length; b++) {
                         const x = renglones[a], y = renglones[b];
                         if (!x.codigo || x.codigo !== y.codigo) continue;
-                        if (normalizarSabor(x.sabor) !== normalizarSabor(y.sabor)) {
-                            mostrarNotif(`⚠️ El código ${x.codigo} está en dos sabores distintos: cada código debe ser de un solo sabor`, 'error'); return;
+                        const mismoSabor = normalizarSabor(x.sabor) === normalizarSabor(y.sabor);
+                        if (!mismoSabor && !codigoCompartidoKing) {
+                            mostrarNotif(`⚠️ El código ${x.codigo} está en dos sabores distintos: cada código debe ser de un solo sabor (o marca la casilla de King Supplements si de verdad viene así de fábrica)`, 'error'); return;
                         }
-                        if ((x.caducidad || '') === (y.caducidad || '')) {
+                        if (mismoSabor && (x.caducidad || '') === (y.caducidad || '')) {
                             mostrarNotif(`⚠️ El código ${x.codigo} está repetido. Para repetirlo, los dos renglones deben tener distinta fecha de caducidad`, 'error'); return;
                         }
                     }
@@ -2768,6 +2778,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 codigoBarras,
                 codigosBarras,
                 stockRenglones,
+                codigoCompartidoKing: document.getElementById('codigoCompartidoKing').checked,
                 esOferta: document.getElementById('esOferta').checked,
                 esNuevo: document.getElementById('esNuevo').checked,
                 esMasVendido: document.getElementById('esMasVendido').checked,
@@ -2810,6 +2821,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             document.getElementById('precioMayoreo').value = p.precioMayoreo;
             document.getElementById('precioPublico').value = p.precioPublico;
             document.getElementById('enStock').checked = p.enStock;
+            document.getElementById('codigoCompartidoKing').checked = !!p.codigoCompartidoKing;
             const renglonesGuardados = stockRenglonesDe(p);
             if (p.controlStock === 'individual') {
                 codigosIndividualesTemp = (renglonesGuardados || []).map(r => ({ codigo: r.codigo, sabor: r.sabor, caducidad: r.caducidad || '' }));
@@ -3733,12 +3745,18 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         }
 
         // Busca un producto por cualquiera de sus códigos y regresa también el sabor de ese código.
+        // Si el código de King Supplements está compartido entre varios sabores, "sabor" sale en null
+        // (igual que el código general del producto) para que se pregunte cuál es antes de vender.
         function buscarProductoPorCodigo(codigo) {
             for (const p of productos) {
                 const rows = stockRenglonesDe(p);
                 if (rows) {
-                    const fila = rows.find(r => r.codigo && r.codigo === codigo);
-                    if (fila) return { producto: p, sabor: fila.sabor, codigo };
+                    const coincidencias = rows.filter(r => r.codigo && r.codigo === codigo);
+                    if (coincidencias.length > 0) {
+                        const sabores = [...new Set(coincidencias.map(r => normalizarSabor(r.sabor)))];
+                        if (sabores.length > 1) return { producto: p, sabor: null, codigo };
+                        return { producto: p, sabor: coincidencias[0].sabor, codigo };
+                    }
                 }
                 // Código general del producto: si lleva renglones no dice el sabor (sabor: null => hay que preguntar)
                 if (p.codigoBarras && p.codigoBarras === codigo) return { producto: p, sabor: rows ? null : '', codigo };
@@ -3754,9 +3772,11 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         }
 
         // Opciones de sabor que se pueden vender ahora: [{sabor, disponible}] (vacío si no hay que elegir).
-        function opcionesSaborDe(producto) {
+        // Con codigoFiltro, solo se ofrecen los sabores que de verdad comparten ese código escaneado
+        // (para el caso de King Supplements, donde un código puede repetirse solo entre algunos sabores).
+        function opcionesSaborDe(producto, codigoFiltro) {
             if (!usaControlPorSabor(producto)) return [];
-            const rows = stockRenglonesDe(producto);
+            const rows = stockRenglonesDe(producto).filter(r => !codigoFiltro || r.codigo === codigoFiltro);
             const vistos = new Set();
             const opciones = [];
             rows.forEach(r => {
@@ -3960,7 +3980,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         function iniciarAgregarATienda(productoId, codigoEscaneado) {
             const producto = productos.find(p => p.id === productoId);
             if (!producto) return;
-            const opciones = opcionesSaborDe(producto);
+            const opciones = opcionesSaborDe(producto, codigoEscaneado);
             if (opciones.length <= 1) {
                 agregarACarritoTienda(productoId, opciones.length === 1 ? opciones[0].sabor : '', codigoEscaneado || '');
                 return;
