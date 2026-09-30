@@ -2039,6 +2039,8 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         let clienteVinculadoTienda = null;
         let descuentoNivelAplicadoTienda = false;
         let cuponAplicadoTienda = null;
+        let descuentoManualAplicadoTienda = false;
+        let descuentoManualPorcentajeTienda = 5;
         let mostrarListaPaquetesTienda = false;
         const CATEGORIAS_UI_ORIENTACION = [
             { id: 'ganar-musculo', titulo: 'Ganar músculo', subtitulo: 'o fuerza' },
@@ -3496,6 +3498,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             modoCobroTienda = 'venta';
             clienteVinculadoTienda = null;
             descuentoNivelAplicadoTienda = false;
+            descuentoManualAplicadoTienda = false;
             cuponAplicadoTienda = null;
             mostrarListaPaquetesTienda = false;
             reiniciarEstadoTerminal();
@@ -4145,7 +4148,35 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             if (descuentoNivelAplicadoTienda && clienteVinculadoTienda && clienteVinculadoTienda.nivelDesbloqueado) {
                 return subtotal * (clienteVinculadoTienda.nivelDesbloqueado / 100);
             }
+            if (descuentoManualAplicadoTienda) {
+                return subtotal * (descuentoManualPorcentajeTienda / 100);
+            }
             return 0;
+        }
+
+        // Descuento especial a tu criterio (a veces se ofrece, a veces no — tú decides caso por
+        // caso). Empieza en 5%, pero el número se puede cambiar a mano antes de aplicarlo, por si
+        // algún día se maneja un porcentaje distinto.
+        function toggleDescuentoManualTienda() {
+            if (cuponAplicadoTienda) {
+                mostrarNotif('⚠️ Ya tiene un cupón aplicado — quítalo primero', 'error');
+                return;
+            }
+            if (descuentoNivelAplicadoTienda) {
+                mostrarNotif('⚠️ Ya tiene el descuento por nivel aplicado — quítalo primero', 'error');
+                return;
+            }
+            if (!descuentoManualAplicadoTienda) {
+                const campo = document.getElementById('cobro-descuento-manual-input');
+                const valor = campo ? parseFloat(campo.value) : descuentoManualPorcentajeTienda;
+                if (!valor || valor <= 0 || valor > 100) {
+                    mostrarNotif('⚠️ Escribe un porcentaje válido (entre 1 y 100)', 'error');
+                    return;
+                }
+                descuentoManualPorcentajeTienda = valor;
+            }
+            descuentoManualAplicadoTienda = !descuentoManualAplicadoTienda;
+            renderCobroTienda();
         }
 
         function totalCarritoTienda() {
@@ -4157,6 +4188,10 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 mostrarNotif('⚠️ Ya tiene un cupón aplicado — quítalo primero', 'error');
                 return;
             }
+            if (descuentoManualAplicadoTienda) {
+                mostrarNotif('⚠️ Ya tiene el descuento especial aplicado — quítalo primero', 'error');
+                return;
+            }
             descuentoNivelAplicadoTienda = !descuentoNivelAplicadoTienda;
             renderCobroTienda();
         }
@@ -4164,6 +4199,10 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         async function aplicarCuponTienda() {
             if (descuentoNivelAplicadoTienda) {
                 mostrarNotif('⚠️ Ya tiene el descuento por nivel aplicado — quítalo primero', 'error');
+                return;
+            }
+            if (descuentoManualAplicadoTienda) {
+                mostrarNotif('⚠️ Ya tiene el descuento especial aplicado — quítalo primero', 'error');
                 return;
             }
             const codigo = document.getElementById('cobro-cupon-input').value.trim().toUpperCase();
@@ -4426,6 +4465,22 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                     <div id="cobro-resultados-busqueda"></div>
                 </div>
             `;
+
+            if (carritoTienda.length > 0) {
+                if (descuentoManualAplicadoTienda) {
+                    htmlPrincipal += `<div style="display:flex; align-items:center; justify-content:space-between; background:#fff3e0; border-radius:8px; padding:8px 10px; margin-bottom:14px;">
+                        <span style="font-size:12.5px; font-weight:700; color:#7a4a00;">💲 Descuento especial ${descuentoManualPorcentajeTienda}% aplicado</span>
+                        <button onclick="toggleDescuentoManualTienda()" style="background:transparent; border:none; color:#dc3545; font-weight:700; font-size:12px; cursor:pointer;">Quitar</button>
+                    </div>`;
+                } else if (!cuponAplicadoTienda && !descuentoNivelAplicadoTienda) {
+                    htmlPrincipal += `<div style="display:flex; gap:6px; align-items:center; margin-bottom:14px;">
+                        <span style="font-size:12px; color:#495057; white-space:nowrap;">💲 Descuento especial</span>
+                        <input type="number" id="cobro-descuento-manual-input" min="1" max="100" value="${descuentoManualPorcentajeTienda}" style="width:60px; padding:8px; border-radius:8px; border:1.5px solid #ced4da; font-size:13px;">
+                        <span style="font-size:12px; color:#495057;">%</span>
+                        <button onclick="toggleDescuentoManualTienda()" style="flex:1; background:#e9ecef; color:#495057; border:none; border-radius:8px; padding:8px 10px; font-size:12px; font-weight:700; cursor:pointer;">Aplicar</button>
+                    </div>`;
+                }
+            }
 
             if (clienteVinculadoTienda) {
                 const tieneNivelDisponible = clienteVinculadoTienda.nivelDesbloqueado > 0 && !clienteVinculadoTienda.nivelCanjeado;
@@ -4754,6 +4809,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                     subtotal,
                     descuentoAplicado: descuento > 0 ? descuento : null,
                     cuponAplicado: cuponAplicadoTienda ? cuponAplicadoTienda.codigo : null,
+                    descuentoManualPorcentaje: descuentoManualAplicadoTienda ? descuentoManualPorcentajeTienda : null,
                     total,
                     ganancia,
                     metodoPago: metodoPagoTienda,
@@ -4822,7 +4878,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                     <div style="border-top:1px dashed #ced4da; margin-top:8px; padding-top:8px;">
                         ${v.descuentoAplicado ? `
                             <div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span>Subtotal</span><span>$${v.subtotal.toFixed(2)}</span></div>
-                            <div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span>${v.cuponAplicado ? 'Cupón ' + v.cuponAplicado : 'Descuento por nivel'}</span><span>−$${v.descuentoAplicado.toFixed(2)}</span></div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span>${v.cuponAplicado ? 'Cupón ' + v.cuponAplicado : (v.descuentoReferidoBienvenida ? `Bienvenida por referido ${v.descuentoReferidoBienvenida}%` : (v.descuentoManualPorcentaje ? `Descuento especial ${v.descuentoManualPorcentaje}%` : 'Descuento por nivel'))}</span><span>−$${v.descuentoAplicado.toFixed(2)}</span></div>
                         ` : ''}
                         <div style="display:flex; justify-content:space-between; font-weight:800;">
                             <span>Total</span><span>$${v.total.toFixed(2)}</span>
@@ -8126,6 +8182,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                     <div style="font-size: 13px; color: #495057; margin-bottom: 12px;">
                         ${p.items.map(it => `• ${it.nombre}${it.saborElegido ? ' (' + it.saborElegido + ')' : ''}${(it.talla || it.color) ? ' [' + [it.talla, it.color].filter(Boolean).join(' · ') + ']' : ''} × ${it.cantidad}${notaCaducidadPedidoItem(it)}`).join('<br>')}
                     </div>
+                    ${etiquetaDescuentoPedido(p) ? `<div style="font-size:12.5px; font-weight:700; color:#28a745; margin-bottom:10px;">${etiquetaDescuentoPedido(p)}</div>` : ''}
                     ${renderInfoEnvioPedido(p)}
                     <div style="display:flex; gap:10px;">
                         <button class="btn" style="background: #28a745; color: white;" onclick="marcarPedidoPagado('${p.id}')">✅ Marcar como pagado</button>
@@ -8150,6 +8207,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                     <div style="font-size: 13px; color: #495057; margin-bottom: 12px;">
                         ${p.items.map(it => `• ${it.nombre}${it.saborElegido ? ' (' + it.saborElegido + ')' : ''}${(it.talla || it.color) ? ' [' + [it.talla, it.color].filter(Boolean).join(' · ') + ']' : ''} × ${it.cantidad}${notaCaducidadPedidoItem(it)}`).join('<br>')}
                     </div>
+                    ${etiquetaDescuentoPedido(p) ? `<div style="font-size:12.5px; font-weight:700; color:#28a745; margin-bottom:10px;">${etiquetaDescuentoPedido(p)}</div>` : ''}
                     ${renderInfoEnvioPedido(p)}
                     ${esTienda ? `
                         <button class="btn" style="background:#c2530a; color:white;" onclick="confirmarRecoleccionTienda('${p.id}')">✅ Confirmar recolección</button>
@@ -8271,6 +8329,14 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
 
         function cerrarComprobanteGrande() {
             document.getElementById('modal-comprobante-grande').style.display = 'none';
+        }
+
+        // Etiqueta clara de qué descuento trae un pedido en línea (si trae alguno).
+        function etiquetaDescuentoPedido(p) {
+            if (p.cuponAplicado) return `🎟️ Cupón ${p.cuponAplicado}`;
+            if (p.descuentoReferidoBienvenida) return `🎉 ${p.descuentoAplicado}% de bienvenida por referido (primera compra)`;
+            if (p.descuentoAplicado > 0) return `🔻 Descuento ${p.descuentoAplicado}%`;
+            return '';
         }
 
         function renderInfoEnvioPedido(p) {
@@ -8425,6 +8491,8 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 descuentoAplicado: (pedido.totalOriginal && pedido.total !== undefined)
                     ? Math.max(0, pedido.totalOriginal - (pedido.total - (pedido.costoEnvio || 0)))
                     : null,
+                cuponAplicado: pedido.cuponAplicado || null,
+                descuentoReferidoBienvenida: pedido.descuentoReferidoBienvenida ? pedido.descuentoAplicado : null,
                 ganancia: calcularGananciaPedido(pedido),
                 fecha: fechaPagoISO
             });

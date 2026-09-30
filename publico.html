@@ -296,7 +296,7 @@
             padding: 15px;
         }
         .modal.show { display: flex; }
-        #modal-cuenta, #modal-invitacion-sorteo { z-index: 2100; }
+        #modal-cuenta, #modal-invitacion-sorteo, #modal-invitacion-referido { z-index: 2100; }
         .modal-content {
             background: white;
             border-radius: 15px;
@@ -771,6 +771,18 @@
             <div id="sorteos-necesita-cuenta-wrap" style="display:none; background:#f8f9fa; border-radius:10px; padding:14px; text-align:center;">
                 <p style="font-size:13px; margin:0;">Necesitas <a href="#" onclick="cerrarModalSorteos(); abrirModalCuenta(); return false;" style="color:#17a2b8; font-weight:700;">iniciar sesión</a> para participar en el sorteo.</p>
             </div>
+        </div>
+    </div>
+
+    <div id="modal-invitacion-referido" class="modal">
+        <div class="modal-content" onclick="event.stopPropagation()" style="max-width:420px; text-align:center;">
+            <div style="font-size:48px; margin-bottom:8px;">🎉</div>
+            <h2 style="margin-bottom:12px;">¡<span id="invitacion-referido-nombre"></span> te invitó a ArtFit!</h2>
+            <p style="font-size:15px; line-height:1.6; margin-bottom:8px;">Crea tu cuenta ahora y obtén</p>
+            <div style="font-size:32px; font-weight:900; color:#28a745; margin-bottom:8px;"><span id="invitacion-referido-porcentaje"></span>% de descuento</div>
+            <p style="font-size:13px; color:#6c757d; margin-bottom:20px;">Válido únicamente en tu primera compra</p>
+            <button type="button" class="btn-agregar" style="background:#28a745; margin-bottom:10px;" onclick="document.getElementById('modal-invitacion-referido').classList.remove('show'); abrirModalCuenta();">✅ Crear mi cuenta</button>
+            <button type="button" class="btn-agregar" style="background:white; color:#6c757d; border:2px solid #6c757d;" onclick="document.getElementById('modal-invitacion-referido').classList.remove('show')">Ahora no</button>
         </div>
     </div>
 
@@ -1407,6 +1419,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         const PRODUCTOS_POR_PAGINA = 8;
         let productosVisiblesCount = PRODUCTOS_POR_PAGINA;
         let clienteActual = null;
+        const PORCENTAJE_DESCUENTO_REFERIDO = 5;   // % de bienvenida, solo en la primera compra de quien llega por un link de referido
         let resenasAprobadas = [];
         let codigoTeamCoachingActual = '';
 
@@ -1439,8 +1452,18 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                         if (snapshot.exists()) {
                             const nombreReferente = snapshot.val().nombre.split(' ')[0];
                             const banner = document.getElementById('banner-referido');
-                            banner.textContent = `🎉 ¡${nombreReferente} te invitó a ArtFit! Regístrate arriba y ambos ganan beneficios. →`;
+                            banner.textContent = `🎉 ¡${nombreReferente} te invitó a ArtFit! Regístrate arriba y obtén ${PORCENTAJE_DESCUENTO_REFERIDO}% de descuento en tu primera compra. →`;
                             banner.style.display = 'block';
+
+                            // La notificación grande solo se muestra una vez por celular/navegador,
+                            // aunque vuelvan a abrir el mismo link varias veces.
+                            const yaVisto = localStorage.getItem('artfit_ref_modal_visto');
+                            if (!yaVisto && !clienteActual) {
+                                localStorage.setItem('artfit_ref_modal_visto', '1');
+                                document.getElementById('invitacion-referido-nombre').textContent = nombreReferente;
+                                document.getElementById('invitacion-referido-porcentaje').textContent = PORCENTAJE_DESCUENTO_REFERIDO;
+                                document.getElementById('modal-invitacion-referido').classList.add('show');
+                            }
                         }
                     });
                 }
@@ -2065,6 +2088,13 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 return { totalOriginal, descuento, totalFinal: totalOriginal - descuento, origen: 'nivel' };
             }
 
+            // Bienvenida por referido: 5% en la primera compra únicamente. Se consume solo (se pone
+            // en false) en cuanto se levanta el pedido, para que nunca se repita en compras después.
+            if (clienteActual && clienteActual.referidoPor && clienteActual.descuentoReferidoDisponible) {
+                const descuento = totalOriginal * (PORCENTAJE_DESCUENTO_REFERIDO / 100);
+                return { totalOriginal, descuento, totalFinal: totalOriginal - descuento, origen: 'referido' };
+            }
+
             return { totalOriginal, descuento: 0, totalFinal: totalOriginal, origen: null };
         }
 
@@ -2157,9 +2187,12 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             const totalPiezas = carrito.reduce((sum, item) => sum + item.cantidad, 0);
             let totalHtml = '';
             if (descuento > 0) {
-                const etiqueta = origen === 'cupon' ? `cupón ${cuponAplicado.codigo}` : (origen === 'teamCoaching' ? 'Team Coaching' : `-${clienteActual.nivelDesbloqueado}%`);
+                const etiqueta = origen === 'cupon' ? `cupón ${cuponAplicado.codigo}` : (origen === 'teamCoaching' ? 'Team Coaching' : (origen === 'referido' ? `🎉 bienvenida -${PORCENTAJE_DESCUENTO_REFERIDO}%` : `-${clienteActual.nivelDesbloqueado}%`));
                 totalHtml += `<div style="font-size:13px; font-weight:400; color:#6c757d; text-decoration: line-through;">$${totalOriginal.toFixed(2)}</div>`;
                 totalHtml += `Productos: $${totalFinal.toFixed(2)} MXN <span style="font-size:12px; color:#28a745;">(${etiqueta})</span>`;
+                if (origen === 'referido') {
+                    totalHtml += `<div style="font-size:12px; color:#28a745; font-weight:700; margin-top:4px;">🎉 Te aplicamos ${PORCENTAJE_DESCUENTO_REFERIDO}% de descuento de bienvenida por haber llegado invitado — es válido solo en esta primera compra.</div>`;
+                }
             } else {
                 totalHtml += `Productos: $${totalFinal.toFixed(2)} MXN`;
             }
@@ -2384,6 +2417,8 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                     mensaje += `Cupón ${cuponAplicado.codigo}: -$${descuento.toFixed(2)}\n`;
                 } else if (origen === 'teamCoaching') {
                     mensaje += `Team Coaching (-10%): -$${descuento.toFixed(2)}\n`;
+                } else if (origen === 'referido') {
+                    mensaje += `Bienvenida por referido (-${PORCENTAJE_DESCUENTO_REFERIDO}%, primera compra): -$${descuento.toFixed(2)}\n`;
                 } else {
                     mensaje += `Descuento (-${clienteActual.nivelDesbloqueado}%): -$${descuento.toFixed(2)}\n`;
                 }
@@ -2420,7 +2455,8 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                         precioPublico: item.precioPublico
                     })),
                     totalOriginal: totalOriginal,
-                    descuentoAplicado: origen === 'nivel' ? clienteActual.nivelDesbloqueado : 0,
+                    descuentoAplicado: origen === 'nivel' ? clienteActual.nivelDesbloqueado : (origen === 'referido' ? PORCENTAJE_DESCUENTO_REFERIDO : 0),
+                    descuentoReferidoBienvenida: origen === 'referido',
                     cuponAplicado: origen === 'cupon' ? cuponAplicado.codigo : null,
                     cuponEsVIP: cuponEsVIP,
                     envioGratisVIP: envioGratisUsado,
@@ -2437,6 +2473,11 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
 
                 if (origen === 'nivel') {
                     db.ref('clientes/' + clienteActual.telefono).update({ nivelCanjeado: true });
+                }
+                if (origen === 'referido') {
+                    // Se apaga de una vez, aquí mismo, para que nunca se le vuelva a aplicar en compras futuras.
+                    db.ref('clientes/' + clienteActual.telefono).update({ descuentoReferidoDisponible: false });
+                    clienteActual.descuentoReferidoDisponible = false;
                 }
                 if (tienePaqueteVIP) {
                     const lunesActual = obtenerLunesActual();
@@ -3373,6 +3414,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 if (refGuardado && refGuardado !== telefono) {
                     nuevoCliente.referidoPor = refGuardado;
                     nuevoCliente.primeraCompraBonoDado = false;
+                    nuevoCliente.descuentoReferidoDisponible = true;
                 }
                 localStorage.removeItem('artfit_ref_pendiente');
                 db.ref('clientes/' + telefono).set(nuevoCliente);
