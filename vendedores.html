@@ -471,7 +471,7 @@
                     <span id="herramientas-badge-total" style="display:none; background:#dc3545; color:white; border-radius:999px; padding:3px 10px; font-size:13px; font-weight:900; margin-left:8px; animation: pulso-herramientas 1.4s ease-in-out infinite;">0</span>
                     <span id="herramientas-chevron" style="font-size:24px; font-weight:900; transition: transform 0.2s; display:inline-block; flex-shrink:0; margin-left:10px;">⌄</span>
                 </div>
-                <div id="herramientas-panel" style="display:none;">
+                <div id="herramientas-panel" style="display:none;" onclick="if(event.target.closest('button')) cerrarHerramientasPanel()">
                 <div style="display:flex; flex-direction:column; gap:8px;">
                     <div>
                         <p style="font-size:11px; font-weight:700; color:#adb5bd; margin:0 0 4px 2px;">📌 ATENCIÓN DIARIA</p>
@@ -487,6 +487,9 @@
                             </button>
                             <button class="btn" id="btn-cupones" style="background: #e83e8c; color: white; position: relative;" onclick="mostrarVistaCupones()">
                                 <span class="icono-circulo">🎟️</span> Cupones <span id="cupones-agotandose-count" style="display:none; background:#dc3545; border-radius:10px; padding:1px 7px; font-size:11px; margin-left:4px;">0</span>
+                            </button>
+                            <button class="btn" id="btn-buenfin" style="background: linear-gradient(135deg, #dc3545, #ff6b00); color: white; position: relative;" onclick="mostrarVistaBuenFin()">
+                                <span class="icono-circulo">🔥</span> Buen Fin <span id="bf-badge-activo" style="display:none; background:#28a745; border-radius:10px; padding:1px 7px; font-size:11px; margin-left:4px;">ON</span>
                             </button>
                             <button class="btn" id="btn-menciones" style="background: #fd7e14; color: white; position: relative;" onclick="mostrarVistaMenciones()">
                                 <span class="icono-circulo">📸</span> Menciones IG <span id="menciones-pendientes-count" style="background:#dc3545; border-radius:10px; padding:1px 7px; font-size:11px; margin-left:4px;">0</span>
@@ -1113,6 +1116,54 @@
                 <div id="lista-codigos-barras"></div>
             </div>
 
+            <div id="vista-buenfin" style="display:none;">
+                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px; padding-top: 62px;">
+                </div>
+                <div class="card" style="background:white; border-radius:15px; padding:18px; margin-bottom:14px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                        <div>
+                            <div style="font-size:17px; font-weight:900;">🔥 Buen Fin — cupón especial</div>
+                            <div id="bf-estado" style="font-size:12.5px; margin-top:4px;"></div>
+                        </div>
+                        <button id="bf-switch" class="btn" style="min-width:130px; font-size:14px;" onclick="toggleBuenFin()">Apagado</button>
+                    </div>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:10px; margin-top:14px;">
+                        <div><label style="display:block; font-size:12px; font-weight:700; margin-bottom:4px;">Inicia</label><input type="date" id="bf-inicio" class="buscador" style="margin-bottom:0;" onchange="guardarConfigBuenFin()"></div>
+                        <div><label style="display:block; font-size:12px; font-weight:700; margin-bottom:4px;">Termina (inclusive)</label><input type="date" id="bf-fin" class="buscador" style="margin-bottom:0;" onchange="guardarConfigBuenFin()"></div>
+                        <div><label style="display:block; font-size:12px; font-weight:700; margin-bottom:4px;">Margen mínimo %</label><input type="number" id="bf-piso" class="buscador" min="0" max="90" step="1" style="margin-bottom:0;" onchange="guardarConfigBuenFin()"></div>
+                        <div><label style="display:block; font-size:12px; font-weight:700; margin-bottom:4px;">Código del cupón</label><input type="text" id="bf-codigo" class="buscador" style="margin-bottom:0; text-transform:uppercase;" onchange="guardarConfigBuenFin()"></div>
+                    </div>
+                    <p style="font-size:11.5px; color:#6c757d; margin-top:10px; line-height:1.5;">Hora de Chihuahua. Fuera de esas fechas las etiquetas, precios y el cupón desaparecen solos y regresa la oferta normal. Para otro año solo cambia las fechas. El cupón requiere cuenta, es de un solo uso por persona y no se combina con otros descuentos.</p>
+                </div>
+
+                <div class="card" style="background:white; border-radius:15px; padding:18px; margin-bottom:14px;">
+                    <div id="bf-resumen" style="font-size:13px; line-height:1.6; margin-bottom:12px;"></div>
+                    <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                        <button class="btn" style="background:#28a745; color:white; flex:1; min-width:150px;" onclick="aplicarMasivoBuenFin('sugerido')">✅ Aplicar sugeridos a los elegibles</button>
+                        <button class="btn" style="background:#17a2b8; color:white; flex:1; min-width:150px;" onclick="aplicarMasivoBuenFin('diez')">🔟 Poner 10% a los elegibles</button>
+                        <button class="btn" style="background:#dc3545; color:white; flex:1; min-width:150px;" onclick="aplicarMasivoBuenFin('quitar')">🧹 Quitar todos</button>
+                    </div>
+                </div>
+
+                <div class="card" style="background:white; border-radius:15px; padding:18px; margin-bottom:14px;">
+                    <div style="font-size:15px; font-weight:900; margin-bottom:8px;">🎟️ Control de canjes</div>
+                    <div id="bf-canjes">Cargando...</div>
+                </div>
+
+                <div class="card" style="background:white; border-radius:15px; padding:18px; margin-bottom:14px;">
+                    <input type="text" id="bf-buscar" class="buscador" placeholder="🔍 Buscar producto..." oninput="renderListaBuenFin()" style="margin-bottom:8px;">
+                    <select id="bf-filtro" class="buscador" style="margin-bottom:8px;" onchange="renderListaBuenFin()">
+                        <option value="todos">Todos los productos</option>
+                        <option value="participan">Los que ya participan</option>
+                        <option value="elegibles">Elegibles (sugerido 10% o más)</option>
+                        <option value="excluidos">Excluidos (no se recomiendan)</option>
+                        <option value="mas10">Con más de 10%</option>
+                        <option value="alerta">Con alerta de margen</option>
+                    </select>
+                    <div id="bf-lista"></div>
+                </div>
+            </div>
+
             <div id="vista-caducidades" style="display:none;">
                 <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px; padding-top: 62px;">
                 </div>
@@ -1401,8 +1452,13 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Foto (máx 500KB)</label>
-                    <input type="file" id="foto" accept="image/*" onchange="cargarImagen(event)">
+                    <label>Foto del producto</label>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button type="button" class="btn" style="background:#17a2b8; color:white; flex:1; min-width:130px;" onclick="document.getElementById('foto-cam').click()">📷 Tomar foto</button>
+                        <button type="button" class="btn" style="background:#6c757d; color:white; flex:1; min-width:130px;" onclick="document.getElementById('foto').click()">🖼️ Galería</button>
+                    </div>
+                    <input type="file" id="foto-cam" accept="image/*" capture="environment" style="display:none;" onchange="cargarImagen(event)">
+                    <input type="file" id="foto" accept="image/*" style="display:none;" onchange="cargarImagen(event)">
                     <img id="preview" style="width: 100%; margin-top: 10px; border-radius: 8px; display: none;">
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px;">
@@ -1418,6 +1474,19 @@
                         <label style="font-size: 12px;">P. Público</label>
                         <input type="number" id="precioPublico" step="0.01" placeholder="0.00">
                     </div>
+                </div>
+                <div id="formula-box" style="background:#f4fbfb; border:1.5px solid #b8e0e0; border-radius:10px; padding:12px; margin:-5px 0 15px;">
+                    <div style="font-size:13px; font-weight:800; color:#0a6668; margin-bottom:2px;">🧮 Calculadora de precios</div>
+                    <div style="font-size:11px; color:#6c757d; margin-bottom:8px;">Precio = Costo ÷ (1 − margen). Solo llena los campos; no guarda hasta que pulses "Guardar producto".</div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
+                        <div><label style="font-size:11px; font-weight:700;">Ganancia público %</label><input type="number" id="fx-pub" value="40" min="1" max="90" step="1" oninput="actualizarFormulaPrecios()" style="width:100%; padding:8px; border:1.5px solid #ced4da; border-radius:8px;"></div>
+                        <div><label style="font-size:11px; font-weight:700;">Ganancia mayoreo %</label><input type="number" id="fx-may" value="30" min="1" max="90" step="1" oninput="actualizarFormulaPrecios()" style="width:100%; padding:8px; border:1.5px solid #ced4da; border-radius:8px;"></div>
+                        <div><label style="font-size:11px; font-weight:700;">Redondeo</label><select id="fx-red" onchange="actualizarFormulaPrecios()" style="width:100%; padding:8px; border:1.5px solid #ced4da; border-radius:8px;"><option value="0">Sin redondear</option><option value="5" selected>A $5</option><option value="10">A $10</option></select></div>
+                    </div>
+                    <div id="fx-hoy" style="font-size:12px; color:#495057; margin-top:8px;"></div>
+                    <div id="fx-preview" style="font-size:13px; margin-top:6px; line-height:1.6;"></div>
+                    <button type="button" id="fx-btn" class="btn" style="background:#0a6668; color:white; margin-top:8px; width:100%;" onclick="aplicarFormulaPrecios()">🧮 Aplicar fórmula</button>
+                    <div id="fx-nota" style="display:none; font-size:12px; font-weight:700; color:#28a745; margin-top:6px;">✅ Fórmula aplicada — aún no se guarda. Revisa y pulsa "Guardar producto".</div>
                 </div>
                 <div class="form-group" style="background:#f8f9fa; padding:12px; border-radius:8px;">
                     <label style="font-size:12px; font-weight:600; margin-bottom:8px; display:block;">Control de stock</label>
@@ -1497,11 +1566,16 @@
                         <textarea id="ficha-tabla" rows="3" placeholder="Ej: Cafeína 200mg, Creatina 3g, Beta-alanina 2g (ingredientes principales y su cantidad)" style="width:100%; padding:8px 10px; border-radius:8px; border:1.5px solid #e9ecef; font-size:13px; font-family:inherit; resize:vertical;" oninput="if(this.value.trim()){document.getElementById('error-ficha-tabla').style.display='none'; this.style.borderColor='#e9ecef';}"></textarea>
                         <div id="error-ficha-tabla" style="display:none; font-size:11.5px; color:#dc3545; margin-top:4px; font-weight:600;">⚠️ Este campo es obligatorio — escribe al menos los ingredientes principales.</div>
                         <div style="margin-top: 8px;">
-                            <label style="font-size: 11px; color: #6c757d; font-weight: 400;">Además, puedes subir la foto de la tabla del empaque (opcional, máx 500KB — es un extra visual, no reemplaza el texto de arriba)</label>
+                            <label style="font-size: 11px; color: #6c757d; font-weight: 400;">Además, puedes subir la foto de la tabla del empaque (opcional, se ajusta sola de tamaño — es un extra visual, no reemplaza el texto de arriba)</label>
                             <div id="ficha-tabla-foto-pegar" tabindex="0" style="margin-top:4px; padding:10px 12px; border:1.5px dashed #b8e0e0; border-radius:8px; background:#f4fbfb; font-size:12px; color:#0a6668; cursor:text; text-align:center; outline:none;">
                                 📋 Da clic aquí y pega la captura (Ctrl+V / Cmd+V)
                             </div>
-                            <input type="file" id="ficha-tabla-foto" accept="image/*" onchange="cargarTablaFoto(event)" style="display:block; margin-top:6px; font-size:12px;">
+                            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;">
+                                <button type="button" class="btn" style="background:#17a2b8; color:white; flex:1; min-width:130px;" onclick="document.getElementById('ficha-tabla-foto-cam').click()">📷 Tomar foto</button>
+                                <button type="button" class="btn" style="background:#6c757d; color:white; flex:1; min-width:130px;" onclick="document.getElementById('ficha-tabla-foto').click()">🖼️ Galería</button>
+                            </div>
+                            <input type="file" id="ficha-tabla-foto-cam" accept="image/*" capture="environment" style="display:none;" onchange="cargarTablaFoto(event)">
+                            <input type="file" id="ficha-tabla-foto" accept="image/*" style="display:none;" onchange="cargarTablaFoto(event)">
                             <div style="position:relative; display:inline-block; margin-top:8px;">
                                 <img id="ficha-tabla-foto-preview" style="max-width:100%; max-height:160px; border-radius:8px; display:none; border:1.5px solid #e9ecef;">
                                 <button type="button" id="ficha-tabla-foto-quitar" onclick="quitarTablaFoto()" style="display:none; position:absolute; top:4px; right:4px; width:24px; height:24px; border-radius:999px; border:none; background:rgba(0,0,0,0.6); color:white; font-size:13px; cursor:pointer; line-height:1;">✕</button>
@@ -2039,6 +2113,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         let clienteVinculadoTienda = null;
         let descuentoNivelAplicadoTienda = false;
         let cuponAplicadoTienda = null;
+        let buenFinAplicadoTienda = false;
         let descuentoManualAplicadoTienda = false;
         let descuentoManualPorcentajeTienda = 5;
         let mostrarListaPaquetesTienda = false;
@@ -2106,6 +2181,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             ajustarAlturaHeaderSticky();
             actualizarBadgeCodigosBarras();
             actualizarBadgeCaducidades();
+            if (document.getElementById('vista-buenfin').style.display !== 'none') renderVistaBuenFin();
             migrarCategoriaProhormonales();
             if (!masVendidosCalculados) {
                 masVendidosCalculados = true;
@@ -2197,6 +2273,11 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             document.getElementById('herramientas-panel').style.display = abierto ? 'none' : 'block';
             document.getElementById('herramientas-chevron').style.transform = abierto ? 'rotate(0deg)' : 'rotate(180deg)';
             ajustarAlturaHeaderSticky();
+        }
+
+        function cerrarHerramientasPanel() {
+            const p = document.getElementById('herramientas-panel');
+            if (p && p.style.display === 'block') toggleHerramientasPanel();
         }
 
         function actualizarBadgeHerramientas() {
@@ -2351,11 +2432,15 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         function mostrarFormulario() {
             document.getElementById('modal-form').classList.add('show');
             document.getElementById('modal-form-scroll').scrollTop = 0;
+            ['precioPublico', 'precioMayoreo'].forEach(id => { const el = document.getElementById(id); el.style.background = ''; el.style.borderColor = ''; });
+            try { const g = JSON.parse(localStorage.getItem('artfit_fx') || 'null'); if (g) { document.getElementById('fx-pub').value = g.pub; document.getElementById('fx-may').value = g.may; document.getElementById('fx-red').value = g.red; } } catch (e) {}
+            actualizarFormulaPrecios();
         }
 
         function cerrarModal() {
             document.getElementById('modal-form').classList.remove('show');
             document.getElementById('producto-form').reset();
+            ['precioPublico', 'precioMayoreo'].forEach(id => { const el = document.getElementById(id); el.style.background = ''; el.style.borderColor = ''; });
             actualizarCamposPorCategoria();
             document.getElementById('preview').style.display = 'none';
             imagenBase64 = '';
@@ -2369,21 +2454,40 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             cambiarControlStock('manual');
         }
 
-        function cargarImagen(e) {
-            const file = e.target.files[0];
-            if (file) {
-                if (file.size > 500000) {
-                    alert('Imagen muy grande. Máximo 500KB');
-                    return;
-                }
+        function redimensionarImagen(file, maxLado, calidad) {
+            return new Promise((resolve, reject) => {
                 const reader = new FileReader();
-                reader.onloadend = () => {
-                    imagenBase64 = reader.result;
-                    document.getElementById('preview').src = imagenBase64;
-                    document.getElementById('preview').style.display = 'block';
+                reader.onerror = () => reject(new Error('No se pudo leer la imagen'));
+                reader.onload = () => {
+                    const img = new Image();
+                    img.onerror = () => reject(new Error('Formato de imagen no compatible'));
+                    img.onload = () => {
+                        let w = img.width, h = img.height;
+                        const escala = Math.min(1, maxLado / Math.max(w, h));
+                        w = Math.round(w * escala); h = Math.round(h * escala);
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w; canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, w, h);
+                        ctx.drawImage(img, 0, 0, w, h);
+                        resolve(canvas.toDataURL('image/jpeg', calidad));
+                    };
+                    img.src = reader.result;
                 };
                 reader.readAsDataURL(file);
-            }
+            });
+        }
+
+        function cargarImagen(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            redimensionarImagen(file, 900, 0.8).then(data => {
+                imagenBase64 = data;
+                document.getElementById('preview').src = imagenBase64;
+                document.getElementById('preview').style.display = 'block';
+            }).catch(err => alert('No se pudo cargar la imagen: ' + err.message));
+            e.target.value = '';
         }
 
         function cargarTablaFoto(e) {
@@ -2400,18 +2504,12 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
 
         function procesarArchivoTablaFoto(file) {
             if (!file) return;
-            if (file.size > 500000) {
-                alert('Imagen muy grande. Máximo 500KB');
-                return;
-            }
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                tablaFotoBase64 = reader.result;
+            redimensionarImagen(file, 1400, 0.8).then(data => {
+                tablaFotoBase64 = data;
                 document.getElementById('ficha-tabla-foto-preview').src = tablaFotoBase64;
                 document.getElementById('ficha-tabla-foto-preview').style.display = 'block';
                 document.getElementById('ficha-tabla-foto-quitar').style.display = 'block';
-            };
-            reader.readAsDataURL(file);
+            }).catch(err => alert('No se pudo cargar la imagen: ' + err.message));
         }
 
         document.getElementById('ficha-tabla-foto-pegar').addEventListener('paste', (e) => {
@@ -2790,6 +2888,16 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 tablaNutricionalFoto: tablaFotoBase64,
                 modoUso: document.getElementById('ficha-modouso').value
             };
+
+            if (Number(producto.buenFinPorcentaje) >= 10) {
+                const costoBF = producto.precioAdquisicion || 0;
+                const pfBF = (producto.precioPublico || 0) * (1 - producto.buenFinPorcentaje / 100);
+                if (!(costoBF > 0) || pfBF <= costoBF) {
+                    if (!confirm('⛔ Este producto está en el Buen Fin (' + producto.buenFinPorcentaje + '%) y con estos precios el precio Buen Fin (' + pfBF.toFixed(2) + ') queda igual o abajo del costo. ¿Guardar de todos modos? Revisa la herramienta 🔥 Buen Fin.')) return;
+                } else if ((pfBF - costoBF) / pfBF < pisoBF() - 1e-9) {
+                    mostrarNotif('⚠️ Con este cambio el margen Buen Fin de este producto quedó abajo de tu mínimo. Revísalo en 🔥 Buen Fin.', 'error');
+                }
+            }
 
             // Se cierra el formulario y se avisa de inmediato; si el servidor rechazara el
             // guardado, sale un aviso rojo con el motivo.
@@ -3500,6 +3608,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             descuentoNivelAplicadoTienda = false;
             descuentoManualAplicadoTienda = false;
             cuponAplicadoTienda = null;
+            buenFinAplicadoTienda = false;
             mostrarListaPaquetesTienda = false;
             reiniciarEstadoTerminal();
             document.getElementById('modal-cobro-tienda').classList.add('show');
@@ -3555,6 +3664,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             clienteVinculadoTienda = null;
             descuentoNivelAplicadoTienda = false;
             cuponAplicadoTienda = null;
+            buenFinAplicadoTienda = false;
             carritoTienda = carritoTienda.filter(item => !item.esPaqueteVIP);
             mostrarListaPaquetesTienda = false;
             renderCobroTienda();
@@ -4140,6 +4250,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
 
         function descuentoCarritoTienda() {
             const subtotal = subtotalCarritoTienda();
+            if (buenFinAplicadoTienda) return descuentoBuenFinTienda();
             if (cuponAplicadoTienda) {
                 return cuponAplicadoTienda.tipo === 'porcentaje'
                     ? subtotal * (cuponAplicadoTienda.valor / 100)
@@ -4158,7 +4269,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         // caso). Empieza en 5%, pero el número se puede cambiar a mano antes de aplicarlo, por si
         // algún día se maneja un porcentaje distinto.
         function toggleDescuentoManualTienda() {
-            if (cuponAplicadoTienda) {
+            if (cuponAplicadoTienda || buenFinAplicadoTienda) {
                 mostrarNotif('⚠️ Ya tiene un cupón aplicado — quítalo primero', 'error');
                 return;
             }
@@ -4184,7 +4295,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         }
 
         function toggleDescuentoNivelTienda() {
-            if (cuponAplicadoTienda) {
+            if (cuponAplicadoTienda || buenFinAplicadoTienda) {
                 mostrarNotif('⚠️ Ya tiene un cupón aplicado — quítalo primero', 'error');
                 return;
             }
@@ -4209,6 +4320,19 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             const errorDiv = document.getElementById('cobro-cupon-error');
             errorDiv.style.display = 'none';
             if (!codigo) return;
+
+            if (codigo === ((buenFinCfg.codigo || 'BUENFIN').toUpperCase())) {
+                const fallo = m => { errorDiv.textContent = m; errorDiv.style.display = 'block'; };
+                if (!buenFinVigenteAhora()) return fallo('El cupón Buen Fin no está vigente (fuera de fechas o apagado).');
+                if (!clienteVinculadoTienda) return fallo('El cupón Buen Fin requiere una cuenta vinculada (un uso por persona).');
+                if (!carritoTienda.some(i => pctBuenFinTienda(i) > 0)) return fallo('Ningún producto del carrito participa en el Buen Fin.');
+                const uso = await db.ref('clientes/' + clienteVinculadoTienda.telefono + '/buenFinUsado').once('value');
+                if (uso.val()) return fallo('Este cliente ya usó su cupón Buen Fin.');
+                buenFinAplicadoTienda = true;
+                renderCobroTienda();
+                mostrarNotif('🔥 Cupón Buen Fin aplicado', 'success');
+                return;
+            }
 
             const snap = await db.ref('cupones/' + codigo).once('value');
             if (!snap.exists() || !snap.val().activo) {
@@ -4247,6 +4371,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
 
         function quitarCuponTienda() {
             cuponAplicadoTienda = null;
+            buenFinAplicadoTienda = false;
             renderCobroTienda();
         }
 
@@ -4472,7 +4597,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                         <span style="font-size:12.5px; font-weight:700; color:#7a4a00;">💲 Descuento especial ${descuentoManualPorcentajeTienda}% aplicado</span>
                         <button onclick="toggleDescuentoManualTienda()" style="background:transparent; border:none; color:#dc3545; font-weight:700; font-size:12px; cursor:pointer;">Quitar</button>
                     </div>`;
-                } else if (!cuponAplicadoTienda && !descuentoNivelAplicadoTienda) {
+                } else if (!cuponAplicadoTienda && !buenFinAplicadoTienda && !descuentoNivelAplicadoTienda) {
                     htmlPrincipal += `<div style="display:flex; gap:6px; align-items:center; margin-bottom:14px;">
                         <span style="font-size:12px; color:#495057; white-space:nowrap;">💲 Descuento especial</span>
                         <input type="number" id="cobro-descuento-manual-input" min="1" max="100" value="${descuentoManualPorcentajeTienda}" style="width:60px; padding:8px; border-radius:8px; border:1.5px solid #ced4da; font-size:13px;">
@@ -4502,9 +4627,9 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                             </label>`;
                         }
 
-                        if (hayProductos && cuponAplicadoTienda) {
+                        if (hayProductos && (cuponAplicadoTienda || buenFinAplicadoTienda)) {
                             htmlPrincipal += `<div style="display:flex; align-items:center; justify-content:space-between; background:#e6f5f5; border-radius:8px; padding:8px 10px; margin-bottom:10px;">
-                                <span style="font-size:12.5px; font-weight:700; color:#0a6668;">🎟️ Cupón ${cuponAplicadoTienda.codigo} aplicado</span>
+                                <span style="font-size:12.5px; font-weight:700; color:#0a6668;">${buenFinAplicadoTienda ? '🔥 Cupón Buen Fin aplicado' : '🎟️ Cupón ' + cuponAplicadoTienda.codigo + ' aplicado'}</span>
                                 <button onclick="quitarCuponTienda()" style="background:transparent; border:none; color:#dc3545; font-weight:700; font-size:12px; cursor:pointer;">Quitar</button>
                             </div>`;
                         } else if (hayProductos && !descuentoNivelAplicadoTienda) {
@@ -4517,7 +4642,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                             `;
                         }
 
-                        if (esVIPTienda() && !descuentoNivelAplicadoTienda && !cuponAplicadoTienda) {
+                        if (esVIPTienda() && !descuentoNivelAplicadoTienda && !cuponAplicadoTienda && !buenFinAplicadoTienda) {
                             htmlPrincipal += `<button onclick="toggleListaPaquetesTienda()" style="width:100%; background:${mostrarListaPaquetesTienda ? '#fff3cd' : '#ffffff'}; color:#7a3c00; border:1.5px dashed #ffc107; border-radius:8px; padding:8px 10px; font-size:12.5px; font-weight:700; cursor:pointer;">🎁 ${mostrarListaPaquetesTienda ? 'Ocultar' : 'Ver'} paquetes VIP</button>`;
 
                             if (mostrarListaPaquetesTienda) {
@@ -4785,6 +4910,12 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             }
 
             try {
+                // Cupón Buen Fin: se reserva de forma atómica (un uso por persona) antes de cobrar.
+                if (buenFinAplicadoTienda) {
+                    if (!clienteVinculadoTienda || !buenFinVigenteAhora()) { mostrarNotif('⚠️ El cupón Buen Fin ya no es válido para esta venta', 'error'); buenFinAplicadoTienda = false; renderCobroTienda(); return; }
+                    const res = await db.ref('clientes/' + clienteVinculadoTienda.telefono + '/buenFinUsado').transaction(a => a ? undefined : 'reservado');
+                    if (!res.committed) { mostrarNotif('⚠️ Este cliente ya usó su cupón Buen Fin', 'error'); buenFinAplicadoTienda = false; renderCobroTienda(); return; }
+                }
                 // Descontar inventario de cada producto vendido
                 for (const item of carritoTienda) {
                     if (item.esPaqueteVIP) continue;
@@ -4808,7 +4939,9 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                     items: itemsVenta,
                     subtotal,
                     descuentoAplicado: descuento > 0 ? descuento : null,
-                    cuponAplicado: cuponAplicadoTienda ? cuponAplicadoTienda.codigo : null,
+                    cuponAplicado: buenFinAplicadoTienda ? (buenFinCfg.codigo || 'BUENFIN') : (cuponAplicadoTienda ? cuponAplicadoTienda.codigo : null),
+                    buenFinAplicado: buenFinAplicadoTienda ? true : null,
+                    descuentoBuenFin: buenFinAplicadoTienda ? descuento : null,
                     descuentoManualPorcentaje: descuentoManualAplicadoTienda ? descuentoManualPorcentajeTienda : null,
                     total,
                     ganancia,
@@ -4823,6 +4956,12 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                     infoVIP = await acreditarVentaACliente(clienteVinculadoTienda.telefono, itemsVenta, total, formatearNumeroOrden(numeroOrden));
                     if (descuentoNivelAplicadoTienda) {
                         await db.ref('clientes/' + clienteVinculadoTienda.telefono).update({ nivelCanjeado: true });
+                    }
+                    if (buenFinAplicadoTienda) {
+                        await db.ref('clientes/' + clienteVinculadoTienda.telefono).update({
+                            buenFinUsado: venta.id,
+                            buenFinCanje: { pedidoId: venta.id, origen: 'tienda', fecha: venta.fecha, descuento: descuento, total: total }
+                        });
                     }
                     if (cuponAplicadoTienda) {
                         db.ref('cupones/' + cuponAplicadoTienda.codigo).transaction(cupon => {
@@ -5185,7 +5324,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             actualizarBadgePedidos();
         });
 
-        const VISTAS_ADMIN = ['vista-pedidos', 'vista-cupones', 'vista-menciones', 'vista-vip', 'vista-distribuidores', 'vista-resenas', 'vista-envios', 'vista-historial-envios', 'vista-historial-ventas', 'vista-finanzas', 'vista-team-coaching', 'vista-coaching', 'vista-sorteos', 'vista-clientes', 'vista-codigos-barras', 'vista-sucursales', 'vista-fiado', 'vista-caducidades'];
+        const VISTAS_ADMIN = ['vista-pedidos', 'vista-cupones', 'vista-menciones', 'vista-vip', 'vista-distribuidores', 'vista-resenas', 'vista-envios', 'vista-historial-envios', 'vista-historial-ventas', 'vista-finanzas', 'vista-team-coaching', 'vista-coaching', 'vista-sorteos', 'vista-clientes', 'vista-codigos-barras', 'vista-sucursales', 'vista-fiado', 'vista-caducidades', 'vista-buenfin'];
 
         const TITULOS_VISTAS = {
             'vista-pedidos': '📋 Pedidos pendientes de pago',
@@ -5205,7 +5344,8 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             'vista-codigos-barras': '🏷️ Códigos de barras',
             'vista-sucursales': '🏪 Sucursales',
             'vista-fiado': '💳 Fiado',
-            'vista-caducidades': '⏳ Caducidades'
+            'vista-caducidades': '⏳ Caducidades',
+            'vista-buenfin': '🔥 Buen Fin'
         };
 
         function mostrarBarraVolverCatalogo(idVista) {
@@ -8093,6 +8233,322 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             });
         }
 
+
+        // ===================== BUEN FIN =====================
+        let buenFinCfg = { activo: false, inicio: '2026-11-13', fin: '2026-11-17', margenMinimo: 15, codigo: 'BUENFIN' };
+        let buenFinCanjes = null;
+
+        function escBF(t) {
+            return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+        function dineroBF(n) { return '$' + (Number(n) || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+        db.ref('configuracion/buenFin').on('value', snap => {
+            const v = snap.val();
+            if (v) buenFinCfg = { ...buenFinCfg, ...v };
+            const badge = document.getElementById('bf-badge-activo');
+            if (badge) badge.style.display = buenFinCfg.activo ? 'inline' : 'none';
+            if (document.getElementById('vista-buenfin').style.display !== 'none') renderVistaBuenFin();
+        });
+
+        function buenFinVigenteAhora() {
+            const c = buenFinCfg;
+            if (!c || !c.activo || !c.inicio || !c.fin) return false;
+            const ini = Date.parse(c.inicio + 'T00:00:00-06:00'), fin = Date.parse(c.fin + 'T23:59:59-06:00');
+            return !isNaN(ini) && !isNaN(fin) && Date.now() >= ini && Date.now() <= fin;
+        }
+        function pctBuenFinTienda(item) {
+            if (!buenFinVigenteAhora() || item.esPaqueteVIP || !item.id) return 0;
+            const p = productos.find(x => x.id === item.id);
+            const n = p ? Number(p.buenFinPorcentaje) : 0;
+            return (n >= 10 && n <= 30) ? n : 0;
+        }
+        function descuentoBuenFinTienda() {
+            return carritoTienda.reduce((s, i) => { const n = pctBuenFinTienda(i); return s + (n ? Math.round(i.precioPublico * i.cantidad * n) / 100 : 0); }, 0);
+        }
+
+        function pisoBF() {
+            const n = Number(buenFinCfg.margenMinimo);
+            return (isNaN(n) ? 15 : n) / 100;
+        }
+        // Mayor múltiplo de 5% (tope 30%) que deja el margen igual o arriba del piso. 0 si no hay costo.
+        function sugeridoBF(p) {
+            const costo = Number(p.precioAdquisicion) || 0, precio = Number(p.precioPublico) || 0;
+            if (!(costo > 0) || !(precio > 0)) return 0;
+            const maxD = 1 - costo / (precio * (1 - pisoBF()));
+            const s = Math.floor(maxD / 0.05 + 1e-9) * 0.05;
+            return Math.max(0, Math.min(30, Math.round(s * 100)));
+        }
+        function margenBF(p, pct) {
+            const costo = Number(p.precioAdquisicion) || 0, precio = Number(p.precioPublico) || 0;
+            if (!(precio > 0)) return null;
+            const pf = precio * (1 - (pct || 0) / 100);
+            return (pf - costo) / pf;
+        }
+        function precioConBF(p, pct) { return Math.round((Number(p.precioPublico) || 0) * (1 - pct / 100) * 100) / 100; }
+        function estadoBF(p, pct) {
+            const costo = Number(p.precioAdquisicion) || 0;
+            if (!(costo > 0)) return { ico: '⛔', txt: 'Sin costo capturado', nivel: 2 };
+            const pf = precioConBF(p, pct);
+            if (pf <= costo) return { ico: '⛔', txt: 'Precio bajo el costo', nivel: 2 };
+            if (margenBF(p, pct) < pisoBF() - 1e-9) return { ico: '⚠️', txt: 'Margen bajo el mínimo', nivel: 1 };
+            return { ico: '✅', txt: 'Margen sano', nivel: 0 };
+        }
+
+        function mostrarVistaBuenFin() {
+            document.getElementById('filtros-wrap').style.display = 'none';
+            document.getElementById('productos').style.display = 'none';
+            ocultarTodasLasVistas();
+            document.getElementById('vista-buenfin').style.display = 'block';
+            mostrarBarraVolverCatalogo('vista-buenfin');
+            renderVistaBuenFin();
+            cargarCanjesBuenFin();
+        }
+
+        function renderVistaBuenFin() {
+            const c = buenFinCfg;
+            document.getElementById('bf-inicio').value = c.inicio || '';
+            document.getElementById('bf-fin').value = c.fin || '';
+            document.getElementById('bf-piso').value = c.margenMinimo;
+            document.getElementById('bf-codigo').value = c.codigo || 'BUENFIN';
+            const sw = document.getElementById('bf-switch');
+            sw.textContent = c.activo ? '🟢 Encendido' : '⚪ Apagado';
+            sw.style.background = c.activo ? '#28a745' : '#6c757d';
+            sw.style.color = 'white';
+            const ini = Date.parse((c.inicio || '') + 'T00:00:00-06:00'), fin = Date.parse((c.fin || '') + 'T23:59:59-06:00');
+            const ahora = Date.now();
+            let est;
+            if (!c.activo) est = '⚪ Apagado: los clientes no ven nada del Buen Fin.';
+            else if (isNaN(ini) || isNaN(fin)) est = '⚠️ Falta poner las fechas.';
+            else if (ahora < ini) est = '🟡 Encendido, pero todavía no empieza (arranca solo el ' + escBF(c.inicio) + ').';
+            else if (ahora > fin) est = '🔴 Encendido, pero las fechas ya pasaron: no se muestra nada. Cambia las fechas para otro año.';
+            else est = '🟢 En vivo ahora: los clientes ven etiquetas y precios.';
+            document.getElementById('bf-estado').innerHTML = est;
+
+            const lista = productos.filter(p => !p.esPaqueteVIP);
+            const part = lista.filter(p => Number(p.buenFinPorcentaje) >= 10);
+            const elegibles = lista.filter(p => sugeridoBF(p) >= 10);
+            const prom = arr => arr.length ? arr.reduce((s, x) => s + x, 0) / arr.length : null;
+            const mActual = prom(part.map(p => margenBF(p, 0)).filter(x => x != null));
+            const mBF = prom(part.map(p => margenBF(p, Number(p.buenFinPorcentaje))).filter(x => x != null));
+            const alertas = part.filter(p => estadoBF(p, Number(p.buenFinPorcentaje)).nivel > 0).length;
+            const pct1 = x => x == null ? '—' : (x * 100).toFixed(1) + '%';
+            document.getElementById('bf-resumen').innerHTML =
+                `<b>${part.length}</b> productos participan · <b>${elegibles.length}</b> elegibles · <b>${lista.length - elegibles.length}</b> excluidos por cuidar el margen.<br>` +
+                `Margen promedio de los que participan: ${pct1(mActual)} normal → <b>${pct1(mBF)}</b> con Buen Fin.` +
+                (alertas ? `<br><span style="color:#dc3545; font-weight:700;">⚠️ ${alertas} con alerta de margen o costo.</span>` : '');
+            renderListaBuenFin();
+        }
+
+        function renderListaBuenFin() {
+            const q = (document.getElementById('bf-buscar').value || '').trim().toLowerCase();
+            const f = document.getElementById('bf-filtro').value;
+            let lista = productos.filter(p => !p.esPaqueteVIP);
+            if (q) lista = lista.filter(p => (p.nombre || '').toLowerCase().includes(q));
+            const pctDe = p => Number(p.buenFinPorcentaje) || 0;
+            if (f === 'participan') lista = lista.filter(p => pctDe(p) >= 10);
+            else if (f === 'elegibles') lista = lista.filter(p => sugeridoBF(p) >= 10);
+            else if (f === 'excluidos') lista = lista.filter(p => sugeridoBF(p) < 10);
+            else if (f === 'mas10') lista = lista.filter(p => pctDe(p) > 10);
+            else if (f === 'alerta') lista = lista.filter(p => pctDe(p) >= 10 && estadoBF(p, pctDe(p)).nivel > 0);
+            lista.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
+            const cont = document.getElementById('bf-lista');
+            if (!lista.length) { cont.innerHTML = '<p style="color:#6c757d; text-align:center; padding:20px;">Sin productos en este filtro.</p>'; return; }
+            cont.innerHTML = lista.map(p => {
+                const pct = pctDe(p), sug = sugeridoBF(p);
+                const costo = Number(p.precioAdquisicion) || 0;
+                const mA = margenBF(p, 0);
+                const refPct = pct >= 10 ? pct : (sug >= 10 ? sug : 10);
+                const est = estadoBF(p, refPct);
+                const mR = margenBF(p, refPct);
+                return `<div style="border:1.5px solid ${pct >= 10 ? '#f5c2c7' : '#e9ecef'}; background:${pct >= 10 ? '#fff8f8' : 'white'}; border-radius:12px; padding:10px 12px; margin-bottom:8px;">
+                    <div style="font-weight:800; font-size:13.5px;">${escBF(p.nombre)}</div>
+                    <div style="font-size:11.5px; color:#6c757d; margin-top:2px;">${escBF(p.categoria)}</div>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap:4px 10px; font-size:12px; margin-top:6px;">
+                        <span>Costo: <b>${dineroBF(costo)}</b></span>
+                        <span>Público: <b>${dineroBF(p.precioPublico)}</b></span>
+                        <span>Margen hoy: <b>${mA == null ? '—' : (mA * 100).toFixed(1) + '%'}</b></span>
+                        <span>Sugerido: <b style="color:${sug >= 10 ? '#28a745' : '#dc3545'};">${sug}%</b></span>
+                        <span>Precio Buen Fin: <b>${dineroBF(precioConBF(p, refPct))}</b></span>
+                        <span>Margen resultante: <b>${mR == null ? '—' : (mR * 100).toFixed(1) + '%'}</b></span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap;">
+                        <span title="${est.txt}" style="font-size:12px; font-weight:700;">${est.ico} ${est.txt}</span>
+                        <span style="flex:1;"></span>
+                        <input type="number" id="bf-in-${p.id}" min="0" max="30" step="5" value="${pct || ''}" placeholder="${sug >= 10 ? sug : 10}" style="width:70px; padding:7px; border:1.5px solid #ced4da; border-radius:8px; font-size:14px;"> %
+                        <button class="btn" style="background:#dc3545; color:white; padding:8px 14px; font-size:13px;" onclick="aplicarBuenFinProducto('${p.id}')">Aplicar</button>
+                        ${pct >= 10 ? `<button class="btn" style="background:#e9ecef; color:#495057; padding:8px 12px; font-size:13px;" onclick="quitarBuenFinProducto('${p.id}')">Quitar</button>` : ''}
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function aplicarBuenFinProducto(id) {
+            const p = productos.find(x => x.id === id);
+            if (!p) return;
+            const input = document.getElementById('bf-in-' + id);
+            let n = parseFloat(input.value);
+            if (!input.value.trim() || n === 0) { quitarBuenFinProducto(id); return; }
+            if (isNaN(n) || n < 10 || n > 30) { mostrarNotif('⚠️ El descuento va de 10% a 30%', 'error'); return; }
+            n = Math.round(n * 100) / 100;
+            const costo = Number(p.precioAdquisicion) || 0;
+            if (!(costo > 0)) { mostrarNotif('⛔ Este producto no tiene costo capturado: captúralo primero para cuidar el margen', 'error'); return; }
+            const pf = precioConBF(p, n);
+            if (pf <= costo) { alert('⛔ Con ' + n + '% el precio (' + dineroBF(pf) + ') queda igual o por debajo del costo (' + dineroBF(costo) + '). No se puede aplicar.'); return; }
+            const m = margenBF(p, n);
+            if (m < pisoBF() - 1e-9 && !confirm('⚠️ Con ' + n + '% el margen queda en ' + (m * 100).toFixed(1) + '%, abajo de tu mínimo de ' + (pisoBF() * 100).toFixed(0) + '%. Lo sugerido es ' + sugeridoBF(p) + '%.\n\n¿Aplicarlo de todos modos?')) return;
+            db.ref('productos/' + id + '/buenFinPorcentaje').set(n).then(() => mostrarNotif('🔥 ' + n + '% aplicado', 'success'));
+        }
+        function quitarBuenFinProducto(id) {
+            db.ref('productos/' + id + '/buenFinPorcentaje').remove().then(() => mostrarNotif('Quitado del Buen Fin', 'success'));
+        }
+
+        function aplicarMasivoBuenFin(modo) {
+            const lista = productos.filter(p => !p.esPaqueteVIP);
+            const updates = {};
+            let n = 0, sumA = 0, sumB = 0;
+            if (modo === 'quitar') {
+                lista.filter(p => p.buenFinPorcentaje != null).forEach(p => { updates[p.id + '/buenFinPorcentaje'] = null; n++; });
+                if (!n) { mostrarNotif('Ningún producto tiene Buen Fin', 'error'); return; }
+                if (!confirm('¿Quitar el Buen Fin de ' + n + ' productos?')) return;
+            } else {
+                lista.forEach(p => {
+                    const sug = sugeridoBF(p);
+                    if (sug < 10) return;
+                    const pct = modo === 'diez' ? 10 : sug;
+                    updates[p.id + '/buenFinPorcentaje'] = pct;
+                    n++; sumA += margenBF(p, 0); sumB += margenBF(p, pct);
+                });
+                if (!n) { mostrarNotif('No hay productos elegibles', 'error'); return; }
+                const msg = (modo === 'diez' ? 'Poner 10%' : 'Poner el % sugerido (10% a 30%)') + ' a ' + n + ' productos elegibles.\n\nMargen promedio: ' + (sumA / n * 100).toFixed(1) + '% hoy → ' + (sumB / n * 100).toFixed(1) + '% con Buen Fin (mínimo configurado: ' + (pisoBF() * 100).toFixed(0) + '%).\n\nLos excluidos no se tocan. Esto reemplaza los porcentajes que ya tengan. ¿Aplicar?';
+                if (!confirm(msg)) return;
+            }
+            return db.ref('productos').update(updates).then(() => mostrarNotif('🔥 Listo: ' + n + ' productos', 'success'));
+        }
+
+        function guardarConfigBuenFin() {
+            const inicio = document.getElementById('bf-inicio').value;
+            const fin = document.getElementById('bf-fin').value;
+            let piso = parseFloat(document.getElementById('bf-piso').value);
+            if (isNaN(piso) || piso < 0 || piso > 90) piso = 15;
+            const codigo = (document.getElementById('bf-codigo').value || 'BUENFIN').trim().toUpperCase().replace(/[^A-Z0-9]/g, '') || 'BUENFIN';
+            if (inicio && fin && inicio > fin) { mostrarNotif('⚠️ La fecha de inicio no puede ser después de la final', 'error'); renderVistaBuenFin(); return; }
+            db.ref('configuracion/buenFin').update({ inicio, fin, margenMinimo: piso, codigo }).then(() => mostrarNotif('Guardado', 'success'));
+        }
+
+        async function toggleBuenFin() {
+            if (buenFinCfg.activo) {
+                if (!confirm('¿Apagar el Buen Fin? Los clientes dejan de ver etiquetas, precios y el cupón.')) return;
+                await db.ref('configuracion/buenFin/activo').set(false);
+                return;
+            }
+            if (!buenFinCfg.inicio || !buenFinCfg.fin) { mostrarNotif('⚠️ Pon primero las fechas', 'error'); return; }
+            const lista = productos.filter(p => !p.esPaqueteVIP);
+            const part = lista.filter(p => Number(p.buenFinPorcentaje) >= 10).length;
+            if (part === 0) {
+                const el = lista.filter(p => sugeridoBF(p) >= 10).length;
+                if (el === 0) { mostrarNotif('No hay productos elegibles para el Buen Fin', 'error'); return; }
+                if (!confirm('Todavía no hay productos con Buen Fin. ¿Poner 10% a los ' + el + ' elegibles y encender?')) return;
+                const updates = {};
+                lista.forEach(p => { if (sugeridoBF(p) >= 10) updates[p.id + '/buenFinPorcentaje'] = 10; });
+                await db.ref('productos').update(updates);
+            } else if (!confirm('¿Encender el Buen Fin? Se mostrará solo del ' + buenFinCfg.inicio + ' al ' + buenFinCfg.fin + ' (hora de Chihuahua), con ' + part + ' productos.')) return;
+            await db.ref('configuracion/buenFin').update({ activo: true, codigo: buenFinCfg.codigo || 'BUENFIN', margenMinimo: buenFinCfg.margenMinimo });
+            mostrarNotif('🔥 Buen Fin encendido', 'success');
+        }
+
+        // Canjes: pedidos y ventas que usaron el cupón (queda como historial).
+        async function cargarCanjesBuenFin() {
+            const cont = document.getElementById('bf-canjes');
+            cont.textContent = 'Cargando...';
+            try {
+                // Se lee del registro de cada cliente (buenFinCanje): no necesita índices ni reglas nuevas.
+                const filas = todosLosClientes.filter(c => c.buenFinCanje).map(c => {
+                    const k = c.buenFinCanje;
+                    return { fecha: k.fecha, cliente: c.nombre, folio: null, desc: k.descuento, total: k.total, estado: k.origen === 'tienda' ? 'en tienda' : 'en línea' };
+                }).sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+                buenFinCanjes = filas;
+                const totalDesc = filas.reduce((s, x) => s + (Number(x.desc) || 0), 0);
+                const totalVend = filas.reduce((s, x) => s + (Number(x.total) || 0), 0);
+                if (!filas.length) { cont.innerHTML = '<span style="color:#6c757d; font-size:13px;">Todavía no hay canjes.</span>'; return; }
+                cont.innerHTML = `<div style="font-size:13px; margin-bottom:8px;"><b>${filas.length}</b> canjes · descuento total regalado: <b style="color:#dc3545;">${dineroBF(totalDesc)}</b> · ventas con cupón: <b>${dineroBF(totalVend)}</b></div>` +
+                    filas.map(x => `<div style="display:flex; justify-content:space-between; gap:8px; font-size:12px; padding:6px 0; border-top:1px solid #e9ecef;"><span>${escBF(x.cliente)}${x.folio ? ' · #' + escBF(x.folio) : ''}<br><span style="color:#6c757d;">${x.fecha ? new Date(x.fecha).toLocaleString('es-MX') : ''} · ${escBF(x.estado || '')}</span></span><span style="text-align:right;">−${dineroBF(x.desc)}<br><span style="color:#6c757d;">total ${dineroBF(x.total)}</span></span></div>`).join('');
+            } catch (e) {
+                cont.innerHTML = '<span style="color:#dc3545; font-size:13px;">No se pudieron cargar los canjes: ' + escBF(e.message) + ' </span>';
+            }
+        }
+
+
+        // ===== Calculadora de precios (Aplicar fórmula) =====
+        function precioPorMargen(costo, margenPct, redondeo) {
+            const m = margenPct / 100;
+            let precio = costo / (1 - m);
+            if (redondeo > 0) precio = Math.ceil(precio / redondeo - 1e-9) * redondeo;   // siempre hacia arriba: nunca baja el margen
+            return Math.round(precio * 100) / 100;
+        }
+        function calcularFormulaPrecios() {
+            const costo = parseFloat(document.getElementById('precioAdquisicion').value) || 0;
+            const mp = parseFloat(document.getElementById('fx-pub').value);
+            const mm = parseFloat(document.getElementById('fx-may').value);
+            const red = parseInt(document.getElementById('fx-red').value, 10) || 0;
+            if (!(costo > 0) || isNaN(mp) || isNaN(mm) || mp <= 0 || mp >= 95 || mm <= 0 || mm >= 95) return { costo, ok: false };
+            const pub = precioPorMargen(costo, mp, red), may = precioPorMargen(costo, mm, red);
+            return { costo, ok: true, pub, may, mPub: (pub - costo) / pub * 100, mMay: (may - costo) / may * 100, mayValido: may < pub };
+        }
+        function actualizarFormulaPrecios() {
+            const nota = document.getElementById('fx-nota');
+            if (nota) nota.style.display = 'none';
+            const r = calcularFormulaPrecios();
+            const hoy = document.getElementById('fx-hoy'), prev = document.getElementById('fx-preview'), btn = document.getElementById('fx-btn');
+            if (!hoy) return;
+            const costo = r.costo;
+            const pubAct = parseFloat(document.getElementById('precioPublico').value) || 0;
+            const mayAct = parseFloat(document.getElementById('precioMayoreo').value) || 0;
+            const g = pr => (costo > 0 && pr > 0) ? ((pr - costo) / pr * 100).toFixed(1) + '%' : '—';
+            hoy.textContent = 'Ganancia hoy → público: ' + g(pubAct) + ' · mayoreo: ' + g(mayAct);
+            if (!r.ok) {
+                prev.innerHTML = '<span style="color:#dc3545; font-weight:700;">Captura primero el P. Adquisición (costo) para calcular.</span>';
+                btn.disabled = true; btn.style.opacity = '0.5';
+                return;
+            }
+            btn.disabled = false; btn.style.opacity = '1';
+            let html = 'Público: <b>$' + r.pub.toFixed(2) + '</b> (ganas ' + r.mPub.toFixed(1) + '%) · Mayoreo: <b>$' + r.may.toFixed(2) + '</b> (ganas ' + r.mMay.toFixed(1) + '%)';
+            const av = [];
+            if (r.mPub < 15) av.push('⚠️ El margen del público queda abajo de 15%.');
+            if (r.mMay < 10) av.push('⚠️ El margen de mayoreo queda abajo de 10%.');
+            if (!r.mayValido) av.push('⛔ El mayoreo tiene que ser menor que el público: baja el % de mayoreo o sube el del público.');
+            if (av.length) html += '<div style="color:#dc3545; font-weight:700; margin-top:4px;">' + av.join('<br>') + '</div>';
+            prev.innerHTML = html;
+        }
+        function aplicarFormulaPrecios() {
+            const r = calcularFormulaPrecios();
+            if (!r.ok) { mostrarNotif('Captura primero el costo (P. Adquisición)', 'error'); return; }
+            if (!r.mayValido) { mostrarNotif('El mayoreo debe quedar menor que el público: ajusta los porcentajes', 'error'); return; }
+            if ((r.mPub < 15 || r.mMay < 10) && !confirm('El margen queda bajo lo recomendado (público ' + r.mPub.toFixed(1) + '%, mayoreo ' + r.mMay.toFixed(1) + '%). ¿Llenar los campos de todos modos?')) return;
+            const pub = document.getElementById('precioPublico'), may = document.getElementById('precioMayoreo');
+            pub.value = r.pub.toFixed(2); may.value = r.may.toFixed(2);
+            [pub, may].forEach(el => { el.style.background = '#d4edda'; el.style.borderColor = '#28a745'; });
+            const hoy = document.getElementById('fx-hoy');
+            actualizarFormulaPrecios();
+            document.getElementById('fx-nota').style.display = 'block';
+            try {
+                localStorage.setItem('artfit_fx', JSON.stringify({ pub: document.getElementById('fx-pub').value, may: document.getElementById('fx-may').value, red: document.getElementById('fx-red').value }));
+            } catch (e) {}
+        }
+        (function iniciarFormulaPrecios() {
+            try {
+                const g = JSON.parse(localStorage.getItem('artfit_fx') || 'null');
+                if (g) { document.getElementById('fx-pub').value = g.pub; document.getElementById('fx-may').value = g.may; document.getElementById('fx-red').value = g.red; }
+            } catch (e) {}
+            ['precioAdquisicion', 'precioMayoreo', 'precioPublico'].forEach(id => {
+                document.getElementById(id).addEventListener('input', () => {
+                    if (id !== 'precioAdquisicion') { const el = document.getElementById(id); el.style.background = ''; el.style.borderColor = ''; }
+                    actualizarFormulaPrecios();
+                });
+            });
+            actualizarFormulaPrecios();
+        })();
+
         function mostrarVistaCupones() {
             document.getElementById('filtros-wrap').style.display = 'none';
             document.getElementById('productos').style.display = 'none';
@@ -8333,6 +8789,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
 
         // Etiqueta clara de qué descuento trae un pedido en línea (si trae alguno).
         function etiquetaDescuentoPedido(p) {
+            if (p.buenFinAplicado) return `🔥 Cupón ${p.cuponAplicado || 'BUENFIN'} (Buen Fin) −$${(p.descuentoBuenFin || 0).toFixed(2)}`;
             if (p.cuponAplicado) return `🎟️ Cupón ${p.cuponAplicado}`;
             if (p.descuentoReferidoBienvenida) return `🎉 ${p.descuentoAplicado}% de bienvenida por referido (primera compra)`;
             if (p.descuentoAplicado > 0) return `🔻 Descuento ${p.descuentoAplicado}%`;
@@ -8376,6 +8833,8 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 const costo = prod ? (prod.precioAdquisicion || 0) : 0;
                 ganancia += (precioVenta - costo) * item.cantidad;
             });
+            // El descuento del cupón Buen Fin sale de la ganancia (ya no se regala sin contarlo).
+            if (pedido.buenFinAplicado) ganancia -= (pedido.descuentoBuenFin || 0);
             return ganancia;
         }
 
@@ -8492,6 +8951,8 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                     ? Math.max(0, pedido.totalOriginal - (pedido.total - (pedido.costoEnvio || 0)))
                     : null,
                 cuponAplicado: pedido.cuponAplicado || null,
+                buenFinAplicado: pedido.buenFinAplicado || null,
+                descuentoBuenFin: pedido.buenFinAplicado ? (pedido.descuentoBuenFin || 0) : null,
                 descuentoReferidoBienvenida: pedido.descuentoReferidoBienvenida ? pedido.descuentoAplicado : null,
                 ganancia: calcularGananciaPedido(pedido),
                 fecha: fechaPagoISO
@@ -8594,7 +9055,11 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 if (pedido.descuentoAplicado > 0) {
                     db.ref('clientes/' + pedido.clienteTelefono).update({ nivelCanjeado: false });
                 }
-                if (pedido.cuponAplicado) {
+                if (pedido.buenFinAplicado) {
+                    db.ref('clientes/' + pedido.clienteTelefono + '/buenFinUsado').transaction(v => (v === pedido.id || v === 'reservado') ? null : v)
+                        .then(r => { if (r.committed && r.snapshot.val() === null) db.ref('clientes/' + pedido.clienteTelefono + '/buenFinCanje').remove(); });
+                }
+                if (pedido.cuponAplicado && !pedido.buenFinAplicado) {
                     db.ref('cupones/' + pedido.cuponAplicado).transaction(cupon => {
                         if (!cupon) return cupon;
                         cupon.usos = Math.max(0, (cupon.usos || 0) - 1);

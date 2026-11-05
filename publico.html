@@ -232,6 +232,15 @@
             box-shadow: 0 5px 20px rgba(0,0,0,0.1);
         }
         .producto img { width: 100%; height: 200px; object-fit: cover; }
+        .bf-wrap { position: relative; }
+        .bf-tag { position: absolute; top: 8px; left: 8px; background: linear-gradient(135deg, #dc3545, #ff6b00); color: #fff; font-weight: 900; font-size: 12px; padding: 5px 9px; border-radius: 8px; box-shadow: 0 3px 8px rgba(0,0,0,0.3); letter-spacing: 0.3px; pointer-events: none; }
+        .productos.vista-compacta .bf-tag { font-size: 9.5px; padding: 3px 6px; top: 5px; left: 5px; }
+        .bf-precio { color: #dc3545; font-size: 28px; font-weight: 900; }
+        .productos.vista-compacta .bf-precio { font-size: 17px; }
+        .bf-chip { display: inline-block; margin-top: 6px; background: #fff0f0; color: #b02a37; border: 1px solid #f5c2c7; border-radius: 999px; font-size: 11px; font-weight: 800; padding: 3px 10px; }
+        .productos.vista-compacta .bf-chip { font-size: 9px; padding: 2px 6px; }
+        #banner-buenfin { display: none; background: linear-gradient(135deg, #1a0a0a, #7a1020 60%, #dc3545); color: #fff; border-radius: 14px; padding: 14px 16px; margin: 0 0 14px; box-shadow: 0 4px 14px rgba(220,53,69,0.35); }
+        #banner-buenfin b { color: #ffd166; }
         .producto-info { padding: 20px; }
         .producto h3 { font-size: 18px; font-weight: 900; margin-bottom: 10px; }
         .precio-box {
@@ -518,6 +527,7 @@
                 </div>
             </div>
 
+            <div id="banner-buenfin"></div>
             <div class="productos" id="productos"></div>
         </div>
     </div>
@@ -1434,6 +1444,88 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             codigoTeamCoachingActual = snapshot.val() || '';
         });
 
+        // ===== BUEN FIN =====
+        // Configuración en configuracion/buenFin = {activo, inicio:'AAAA-MM-DD', fin:'AAAA-MM-DD', codigo}
+        // Cada producto con buenFinPorcentaje (10 a 30) participa. Todo se apaga solo fuera de las fechas
+        // (hora de Chihuahua, UTC-6, usando la hora del servidor de Firebase).
+        let buenFinCfg = null;
+        let buenFinOffsetMs = 0;
+        let buenFinAplicado = false;
+        let buenFinUltimoEstado = null;
+        db.ref('.info/serverTimeOffset').on('value', snap => { buenFinOffsetMs = snap.val() || 0; });
+        db.ref('configuracion/buenFin').on('value', snap => {
+            buenFinCfg = snap.val();
+            refrescarBuenFin();
+        });
+
+        function buenFinActivo() {
+            if (!buenFinCfg || !buenFinCfg.activo || !buenFinCfg.inicio || !buenFinCfg.fin) return false;
+            const ini = Date.parse(buenFinCfg.inicio + 'T00:00:00-06:00');
+            const fin = Date.parse(buenFinCfg.fin + 'T23:59:59-06:00');
+            if (isNaN(ini) || isNaN(fin)) return false;
+            const ahora = Date.now() + buenFinOffsetMs;
+            return ahora >= ini && ahora <= fin;
+        }
+        function buenFinCodigo() {
+            return ((buenFinCfg && buenFinCfg.codigo) || 'BUENFIN').trim().toUpperCase();
+        }
+        function pctBuenFin(p) {
+            if (!p || !buenFinActivo()) return 0;
+            const n = Number(p.buenFinPorcentaje);
+            if (!n || n < 10 || n > 30 || !(p.precioPublico > 0)) return 0;
+            return n;
+        }
+        function precioBuenFin(p) {
+            const n = pctBuenFin(p);
+            return n ? Math.round(p.precioPublico * (1 - n / 100) * 100) / 100 : p.precioPublico;
+        }
+        function formatoFechaBF(iso) {
+            const m = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+            const d = (iso || '').split('-');
+            return d.length === 3 ? (parseInt(d[2], 10) + ' ' + m[parseInt(d[1], 10) - 1]) : '';
+        }
+        function actualizarBannerBuenFin() {
+            const b = document.getElementById('banner-buenfin');
+            if (!b) return;
+            if (!buenFinActivo()) { b.style.display = 'none'; return; }
+            b.innerHTML = `<div style="font-size:17px; font-weight:900;">🔥 BUEN FIN ARTFIT — de <b>10%</b> a <b>30%</b> de descuento</div>
+                <div style="font-size:13px; margin-top:6px; line-height:1.5;">Busca la etiqueta <b>🔥 BUEN FIN</b> en los productos. Para aplicarlo, <b>inicia sesión</b> y usa el cupón <b>${buenFinCodigo()}</b> en tu carrito.<br>Un solo uso por persona · ${formatoFechaBF(buenFinCfg.inicio)} al ${formatoFechaBF(buenFinCfg.fin)} · No se combina con otros descuentos.</div>`;
+            b.style.display = 'block';
+        }
+        function refrescarBuenFin() {
+            const estado = buenFinActivo();
+            if (!estado && buenFinAplicado) { buenFinAplicado = false; }
+            actualizarBannerBuenFin();
+            if (estado !== buenFinUltimoEstado) {
+                buenFinUltimoEstado = estado;
+                if (typeof renderProductos === 'function' && Array.isArray(productos)) renderProductos();
+                if (typeof renderCartItems === 'function' && document.getElementById('modal-carrito') && document.getElementById('modal-carrito').classList.contains('show')) renderCartItems();
+            }
+        }
+        setInterval(refrescarBuenFin, 30000);
+
+        function pctBuenFinItem(item) {
+            if (!item || item.esPaqueteVIP || !item.id) return 0;
+            const vivo = (typeof productos !== 'undefined' ? productos : []).find(x => x.id === item.id);
+            return pctBuenFin(vivo);
+        }
+        function imgProducto(p) {
+            const n = pctBuenFin(p);
+            if (!p.foto) return n ? `<div style="padding:10px 12px 0;"><span class="bf-tag" style="position:static; display:inline-block;">🔥 BUEN FIN −${n}%</span></div>` : '';
+            return `<div class="bf-wrap"><img class="producto-clic" onclick="abrirFicha('${p.id}')" src="${p.foto}" alt="${p.nombre}">${n ? `<span class="bf-tag">🔥 BUEN FIN −${n}%</span>` : ''}</div>`;
+        }
+        function bloquePrecio(p, tamTachado) {
+            const n = pctBuenFin(p);
+            if (n) {
+                return `<div style="font-size:${tamTachado}px; color:#adb5bd; text-decoration:line-through;">$${p.precioPublico.toFixed(2)}</div>
+                        <div class="bf-precio">$${precioBuenFin(p).toFixed(2)}</div>
+                        <div class="bf-chip">🎟️ Con cupón ${buenFinCodigo()}</div>`;
+            }
+            const oferta = p.esOferta && !buenFinActivo();
+            return `${oferta ? `<div style="font-size:${tamTachado}px; color:#adb5bd; text-decoration:line-through;">$${(p.precioPublico / 0.95).toFixed(2)}</div>` : ''}
+                        <div class="precio">$${p.precioPublico.toFixed(2)}</div>`;
+        }
+
         // Capturar código de referido en la URL (?ref=ART6141234567)
         // Mostrar el botón de compartir nativo solo si el navegador lo soporta (celulares, principalmente)
         if (navigator.share) {
@@ -1521,7 +1613,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 ? productos 
                 : productos.filter(p => p.categoria === categoriaActual);
 
-            if (destacadoActual === 'oferta') filtrados = filtrados.filter(p => p.esOferta);
+            if (destacadoActual === 'oferta') filtrados = filtrados.filter(p => buenFinActivo() ? pctBuenFin(p) > 0 : p.esOferta);
             else if (destacadoActual === 'nuevo') filtrados = filtrados.filter(p => p.esNuevo);
             else if (destacadoActual === 'vendido') filtrados = filtrados.filter(p => p.esMasVendido || p.masVendidoAuto);
 
@@ -1554,19 +1646,18 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 if (vistaCatalogoActual === 'grid') {
                     return `
                     <div class="producto">
-                        ${p.foto ? `<img class="producto-clic" onclick="abrirFicha('${p.id}')" src="${p.foto}" alt="${p.nombre}">` : ''}
+                        ${imgProducto(p)}
                         <div class="producto-info">
                             <h3 class="producto-clic" onclick="abrirFicha('${p.id}')">${p.nombre}</h3>
                             ${(p.talla || p.color) ? `<p style="color: #6610f2; font-size: 11px; margin: 0 0 4px; font-weight:600;">${[p.talla ? 'Talla: ' + p.talla : '', p.color ? 'Color: ' + p.color : ''].filter(Boolean).join(' · ')}</p>` : ''}
-                            ${(p.esOferta || p.esNuevo || p.esMasVendido || p.masVendidoAuto) ? `<div class="tags">
-                                ${p.esOferta ? '<span class="tag oferta">🏷️ OFERTA</span>' : ''}
+                            ${((p.esOferta && !buenFinActivo()) || p.esNuevo || p.esMasVendido || p.masVendidoAuto) ? `<div class="tags">
+                                ${(p.esOferta && !buenFinActivo()) ? '<span class="tag oferta">🏷️ OFERTA</span>' : ''}
                                 ${p.esNuevo ? '<span class="tag nuevo">✨ NUEVO</span>' : ''}
                                 ${(p.esMasVendido || p.masVendidoAuto) ? '<span class="tag vendido">🔥 VENDIDO</span>' : ''}
                             </div>` : ''}
                             ${resenasProducto.length > 0 ? `<p style="font-size:11px; margin: 4px 0;"><span style="color:#ffc107;">${'⭐'.repeat(Math.round(promedio))}</span> <span style="color:#6c757d;">${promedio.toFixed(1)}</span></p>` : ''}
                             <div class="precio-box">
-                                ${p.esOferta ? `<div style="font-size:12px; color:#adb5bd; text-decoration:line-through;">$${(p.precioPublico / 0.95).toFixed(2)}</div>` : ''}
-                                <div class="precio">$${p.precioPublico.toFixed(2)}</div>
+                                ${bloquePrecio(p, 12)}
                             </div>
                             ${p.sabores
                                 ? `<button class="btn-agregar" onclick="abrirFicha('${p.id}')">Ver opciones</button>`
@@ -1579,7 +1670,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
 
                 return `
                 <div class="producto">
-                    ${p.foto ? `<img class="producto-clic" onclick="abrirFicha('${p.id}')" src="${p.foto}" alt="${p.nombre}">` : ''}
+                    ${imgProducto(p)}
                     <div class="producto-info">
                         <h3 class="producto-clic" onclick="abrirFicha('${p.id}')">${p.nombre}</h3>
                         <p style="color: #6c757d; font-size: 14px; margin: 5px 0;">${p.categoria}</p>
@@ -1596,8 +1687,8 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                             </p>
                         `}
                         <span class="ver-ficha-link" onclick="abrirFicha('${p.id}')">Ver ficha completa</span>
-                        ${(p.esOferta || p.esNuevo || p.esMasVendido || p.masVendidoAuto) ? `<div class="tags">
-                            ${p.esOferta ? '<span class="tag oferta">🏷️ OFERTA</span>' : ''}
+                        ${((p.esOferta && !buenFinActivo()) || p.esNuevo || p.esMasVendido || p.masVendidoAuto) ? `<div class="tags">
+                            ${(p.esOferta && !buenFinActivo()) ? '<span class="tag oferta">🏷️ OFERTA</span>' : ''}
                             ${p.esNuevo ? '<span class="tag nuevo">✨ NUEVO</span>' : ''}
                             ${(p.esMasVendido || p.masVendidoAuto) ? '<span class="tag vendido">🔥 MÁS VENDIDO</span>' : ''}
                         </div>` : ''}
@@ -1605,8 +1696,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                             ${saboresDisponibles(p).map(s => `<option value="${s}">${s}</option>`).join('')}
                         </select>` : ''}
                         <div class="precio-box">
-                            ${p.esOferta ? `<div style="font-size:17px; color:#adb5bd; text-decoration:line-through;">$${(p.precioPublico / 0.95).toFixed(2)}</div>` : ''}
-                            <div class="precio">$${p.precioPublico.toFixed(2)}</div>
+                            ${bloquePrecio(p, 17)}
                             <div style="font-size: 11px; color: #6c757d;">Precio al público</div>
                         </div>
                         <button class="btn-agregar" onclick="agregarAlCarrito('${p.id}')">Agregar al Carrito</button>
@@ -1708,6 +1798,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             limpiarErroresEnvio();
             descuentoAplicadoEnCarrito = false;
             cuponAplicado = null;
+            buenFinAplicado = false;
             tipoEnvioActual = null;
             costoEnvioActual = 0;
             comprobanteBase64 = null;
@@ -1756,7 +1847,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
         }
 
         function toggleCanjeDescuento() {
-            if (!descuentoAplicadoEnCarrito && cuponAplicado) {
+            if (!descuentoAplicadoEnCarrito && (cuponAplicado || buenFinAplicado)) {
                 alert('Ya tienes un cupón aplicado. Quítalo primero si quieres usar tu descuento por nivel.');
                 return;
             }
@@ -1771,6 +1862,35 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             }
             const codigo = document.getElementById('cupon-input').value.trim().toUpperCase();
             if (!codigo) return;
+
+            if (codigo === buenFinCodigo()) {
+                if (!buenFinActivo()) {
+                    alert('El cupón ' + buenFinCodigo() + ' solo es válido durante el Buen Fin' + (buenFinCfg && buenFinCfg.inicio ? ' (' + formatoFechaBF(buenFinCfg.inicio) + ' al ' + formatoFechaBF(buenFinCfg.fin) + ').' : '.'));
+                    return;
+                }
+                if (!clienteActual) {
+                    alert('Para usar el cupón ' + buenFinCodigo() + ' necesitas crear tu cuenta o iniciar sesión.');
+                    abrirModalCuenta();
+                    return;
+                }
+                if (!carrito.some(item => pctBuenFinItem(item) > 0)) {
+                    alert('Ninguno de los productos de tu carrito participa en el Buen Fin. Agrega productos con la etiqueta 🔥 BUEN FIN.');
+                    return;
+                }
+                db.ref('clientes/' + clienteActual.telefono + '/buenFinUsado').once('value').then(snap => {
+                    if (snap.val()) {
+                        clienteActual.buenFinUsado = snap.val();
+                        alert('Ya usaste tu cupón ' + buenFinCodigo() + '. Es de un solo uso por persona.');
+                        return;
+                    }
+                    cuponAplicado = null;
+                    buenFinAplicado = true;
+                    document.getElementById('cupon-input').value = '';
+                    renderCartItems();
+                    mostrarNotif('🔥 Cupón ' + buenFinCodigo() + ' aplicado');
+                });
+                return;
+            }
 
             if (codigoTeamCoachingActual && codigo === codigoTeamCoachingActual.trim().toUpperCase()) {
                 if (!clienteActual) {
@@ -1832,6 +1952,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
 
         function quitarCupon() {
             cuponAplicado = null;
+            buenFinAplicado = false;
             document.getElementById('cupon-input').value = '';
             renderCartItems();
         }
@@ -2076,6 +2197,16 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 return { totalOriginal, descuento, totalFinal: totalOriginal - descuento, origen: 'teamCoaching' };
             }
 
+            if (buenFinAplicado && buenFinActivo() && clienteActual && !clienteActual.buenFinUsado) {
+                const descuentoBF = carrito.reduce((sum, item) => {
+                    const n = pctBuenFinItem(item);
+                    return sum + (n ? Math.round(item.cantidad * item.precioPublico * n) / 100 : 0);
+                }, 0);
+                if (descuentoBF > 0) {
+                    return { totalOriginal, descuento: descuentoBF, totalFinal: totalOriginal - descuentoBF, origen: 'buenfin' };
+                }
+            }
+
             if (cuponAplicado) {
                 const descuento = cuponAplicado.tipo === 'porcentaje'
                     ? totalOriginal * (cuponAplicado.valor / 100)
@@ -2136,7 +2267,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
 
             const canjeWrap = document.getElementById('canje-descuento-wrap');
             const tieneCanjeDisponible = clienteActual && clienteActual.nivelDesbloqueado > 0 && !clienteActual.nivelCanjeado;
-            if (tieneCanjeDisponible && !cuponAplicado) {
+            if (tieneCanjeDisponible && !cuponAplicado && !buenFinAplicado) {
                 canjeWrap.style.display = 'block';
                 document.getElementById('canje-porcentaje').textContent = clienteActual.nivelDesbloqueado + '%';
                 const btnCanje = document.getElementById('btn-canje');
@@ -2164,11 +2295,11 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             } else {
                 teamCoachingWrap.style.display = 'none';
                 cuponWrap.style.display = 'block';
-                if (cuponAplicado) {
+                if (cuponAplicado || buenFinAplicado) {
                     cuponForm.style.display = 'none';
                     cuponAplicadoWrap.style.display = 'flex';
                     cuponNotaExclusiva.style.display = 'none';
-                    document.getElementById('cupon-codigo-aplicado').textContent = cuponAplicado.codigo;
+                    document.getElementById('cupon-codigo-aplicado').textContent = cuponAplicado ? cuponAplicado.codigo : buenFinCodigo();
                 } else if (descuentoAplicadoEnCarrito) {
                     cuponForm.style.display = 'none';
                     cuponAplicadoWrap.style.display = 'none';
@@ -2187,9 +2318,12 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             const totalPiezas = carrito.reduce((sum, item) => sum + item.cantidad, 0);
             let totalHtml = '';
             if (descuento > 0) {
-                const etiqueta = origen === 'cupon' ? `cupón ${cuponAplicado.codigo}` : (origen === 'teamCoaching' ? 'Team Coaching' : (origen === 'referido' ? `🎉 bienvenida -${PORCENTAJE_DESCUENTO_REFERIDO}%` : `-${clienteActual.nivelDesbloqueado}%`));
+                const etiqueta = origen === 'buenfin' ? `🔥 cupón ${buenFinCodigo()}` : origen === 'cupon' ? `cupón ${cuponAplicado.codigo}` : (origen === 'teamCoaching' ? 'Team Coaching' : (origen === 'referido' ? `🎉 bienvenida -${PORCENTAJE_DESCUENTO_REFERIDO}%` : `-${clienteActual.nivelDesbloqueado}%`));
                 totalHtml += `<div style="font-size:13px; font-weight:400; color:#6c757d; text-decoration: line-through;">$${totalOriginal.toFixed(2)}</div>`;
                 totalHtml += `Productos: $${totalFinal.toFixed(2)} MXN <span style="font-size:12px; color:#28a745;">(${etiqueta})</span>`;
+                if (origen === 'buenfin') {
+                    totalHtml += `<div style="font-size:12px; color:#dc3545; font-weight:700; margin-top:4px;">🔥 Ahorras $${descuento.toFixed(2)} con el Buen Fin (solo en productos con etiqueta). Cupón de un solo uso.</div>`;
+                }
                 if (origen === 'referido') {
                     totalHtml += `<div style="font-size:12px; color:#28a745; font-weight:700; margin-top:4px;">🎉 Te aplicamos ${PORCENTAJE_DESCUENTO_REFERIDO}% de descuento de bienvenida por haber llegado invitado — es válido solo en esta primera compra.</div>`;
                 }
@@ -2367,6 +2501,25 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
 
         function procederConEnvioPedido() {
             if (!validarFormularioEnvio()) return;
+            // Cupón Buen Fin: se reserva de forma atómica (un solo uso por persona) antes de crear el pedido.
+            if (buenFinAplicado && clienteActual && calcularTotalCarrito().origen === 'buenfin') {
+                db.ref('clientes/' + clienteActual.telefono + '/buenFinUsado').transaction(actual => actual ? undefined : 'reservado').then(res => {
+                    if (!res.committed) {
+                        buenFinAplicado = false;
+                        clienteActual.buenFinUsado = res.snapshot.val() || true;
+                        renderCartItems();
+                        alert('Ya usaste tu cupón ' + buenFinCodigo() + ' (un solo uso por persona). Quitamos el descuento; revisa tu total y vuelve a enviar.');
+                        return;
+                    }
+                    procederConEnvioPedidoInterno();
+                }).catch(() => alert('No se pudo validar tu cupón. Revisa tu conexión e inténtalo de nuevo.'));
+                return;
+            }
+            procederConEnvioPedidoInterno();
+        }
+
+        function procederConEnvioPedidoInterno() {
+            if (!validarFormularioEnvio()) return;
 
             const direccionUsada = leerDireccionActualDelFormulario();
             if (tipoEnvioActual === 'local' && direccionUsada._verificada === false) {
@@ -2413,7 +2566,9 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             const totalPiezas = carrito.reduce((sum, item) => sum + item.cantidad, 0);
             if (seAplicoDescuento) {
                 mensaje += `Subtotal: $${totalOriginal.toFixed(2)}\n`;
-                if (origen === 'cupon') {
+                if (origen === 'buenfin') {
+                    mensaje += `🔥 Cupón ${buenFinCodigo()} (Buen Fin): -$${descuento.toFixed(2)}\n`;
+                } else if (origen === 'cupon') {
                     mensaje += `Cupón ${cuponAplicado.codigo}: -$${descuento.toFixed(2)}\n`;
                 } else if (origen === 'teamCoaching') {
                     mensaje += `Team Coaching (-10%): -$${descuento.toFixed(2)}\n`;
@@ -2452,12 +2607,15 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                         talla: item.talla || '',
                         color: item.color || '',
                         cantidad: item.cantidad,
-                        precioPublico: item.precioPublico
+                        precioPublico: item.precioPublico,
+                        buenFinPorcentaje: origen === 'buenfin' ? pctBuenFinItem(item) : 0
                     })),
                     totalOriginal: totalOriginal,
                     descuentoAplicado: origen === 'nivel' ? clienteActual.nivelDesbloqueado : (origen === 'referido' ? PORCENTAJE_DESCUENTO_REFERIDO : 0),
                     descuentoReferidoBienvenida: origen === 'referido',
-                    cuponAplicado: origen === 'cupon' ? cuponAplicado.codigo : null,
+                    cuponAplicado: origen === 'cupon' ? cuponAplicado.codigo : (origen === 'buenfin' ? buenFinCodigo() : null),
+                    buenFinAplicado: origen === 'buenfin',
+                    descuentoBuenFin: origen === 'buenfin' ? Math.round(descuento * 100) / 100 : 0,
                     cuponEsVIP: cuponEsVIP,
                     envioGratisVIP: envioGratisUsado,
                     tienePaqueteVIP: tienePaqueteVIP,
@@ -2467,6 +2625,13 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                     fecha: new Date().toISOString()
                 };
                 const nuevoPedidoRef = db.ref('pedidos').push(nuevoPedido);
+                if (origen === 'buenfin') {
+                    db.ref('clientes/' + clienteActual.telefono).update({
+                        buenFinUsado: nuevoPedidoRef.key,
+                        buenFinCanje: { pedidoId: nuevoPedidoRef.key, origen: 'linea', fecha: nuevoPedido.fecha, descuento: nuevoPedido.descuentoBuenFin, total: nuevoPedido.total }
+                    });
+                    clienteActual.buenFinUsado = nuevoPedidoRef.key;
+                }
                 generarNumeroOrden().then(resultado => {
                     nuevoPedidoRef.update({ numeroOrden: resultado.snapshot.val() });
                 });
@@ -2510,6 +2675,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             carrito = [];
             descuentoAplicadoEnCarrito = false;
             cuponAplicado = null;
+            buenFinAplicado = false;
             tipoEnvioActual = null;
             costoEnvioActual = 0;
             comprobanteBase64 = null;
@@ -2608,7 +2774,7 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
                 <div class="ficha-body">
                     <div class="ficha-eyebrow">${escapeHtmlFicha(p.categoria)}</div>
                     <h2 class="ficha-nombre">${escapeHtmlFicha(p.nombre)}</h2>
-                    <div class="ficha-precio">$${p.precioPublico.toFixed(2)}</div>
+                    ${pctBuenFin(p) ? `<div class="ficha-precio"><span style="font-size:15px; color:#adb5bd; text-decoration:line-through; margin-right:8px;">$${p.precioPublico.toFixed(2)}</span><span style="color:#dc3545;">$${precioBuenFin(p).toFixed(2)}</span></div><div style="margin-top:6px;"><span class="bf-tag" style="position:static; display:inline-block;">🔥 BUEN FIN −${pctBuenFin(p)}%</span> <span class="bf-chip">🎟️ Con cupón ${buenFinCodigo()}</span></div>` : `<div class="ficha-precio">$${p.precioPublico.toFixed(2)}</div>`}
                     ${beneficiosHtml}
                     ${descripcionHtml}
                     ${tablaHtml}
