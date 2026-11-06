@@ -1582,7 +1582,33 @@ const CATEGORIAS_EXCLUIDAS_ORIENTACION = ["Accesorios", "Otros", "Bebidas y Snac
             document.getElementById('app').style.display = 'block';
             mostrarNotif('✅ Catálogo actualizado');
             intentarAutoLogin();
+            abrirEnlaceProducto();
         });
+
+        // Enlace directo a un producto (Noé 6 nov 2026): publico.html?producto=<id>&buscar=<texto>
+        // Abre la ficha del producto; si no está disponible, muestra la búsqueda con alternativas. Solo la primera carga.
+        let enlaceProductoUsado = false;
+        function abrirEnlaceProducto() {
+            if (enlaceProductoUsado) return;
+            enlaceProductoUsado = true;
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const id = params.get('producto');
+                const texto = params.get('buscar');
+                if (!id && !texto) return;
+                if (id && productos.some(p => p.id === id)) {
+                    abrirFicha(id);
+                    return;
+                }
+                if (texto) {
+                    const b = document.getElementById('buscador');
+                    if (b) b.value = texto;
+                    buscarProducto(texto);
+                    const zona = document.getElementById('productos') || b;
+                    if (zona && zona.scrollIntoView) zona.scrollIntoView({behavior: 'smooth', block: 'start'});
+                }
+            } catch (e) { console.warn('enlace producto', e); }
+        }
 
         function actualizarUI() {
             document.getElementById('total-productos').textContent = productos.length;
